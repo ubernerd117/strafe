@@ -10,6 +10,7 @@ pub struct FetchedPage {
 pub async fn fetch_single_page(url: String) -> FetchedPage {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
+        .user_agent("Strafe/0.1 (desktop search reader; +https://github.com/ubernerd117/strafe)")
         .build()
         .unwrap_or_default();
 

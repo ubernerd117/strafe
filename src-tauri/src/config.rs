@@ -10,6 +10,8 @@ pub struct AppConfig {
     pub brave_api_key: String,
     pub click_outside_dismisses: bool,
     pub scroll_speed: u8,
+    pub theme: String,
+    pub default_view: String,
 }
 
 impl Default for AppConfig {
@@ -20,6 +22,8 @@ impl Default for AppConfig {
             brave_api_key: String::new(),
             click_outside_dismisses: true,
             scroll_speed: 3,
+            theme: "auto".to_string(),
+            default_view: "text".to_string(),
         }
     }
 }
