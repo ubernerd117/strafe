@@ -7,7 +7,9 @@ import { createReader, type ReaderState } from "./reader";
 import { setupKeybindings } from "./keybindings";
 import { parseArticle, getDomain } from "./readability";
 
-type AppState = "search" | "loading" | "reader" | "api-key-setup";
+import { createSettings } from "./settings";
+
+type AppState = "search" | "loading" | "reader" | "api-key-setup" | "settings";
 
 interface SearchResult {
   title: string;
@@ -29,20 +31,26 @@ let readerState: ReaderState = {
   pages: [],
   activeIndex: 0,
   showImages: false,
+  showRawView: false,
 };
 let searchInput: ReturnType<typeof createSearchInput> | null = null;
 let reader: ReturnType<typeof createReader> | null = null;
 let cleanupKeybindings: (() => void) | null = null;
 let scrollSpeed = 3;
+let defaultViewMode: string = "text";
 
 async function init() {
   const config = await invoke<{
     brave_api_key: string;
     scroll_speed: number;
     results_count: number;
+    theme: string;
+    default_view: string;
   }>("get_config");
 
   scrollSpeed = config.scroll_speed;
+  defaultViewMode = config.default_view;
+  applyTheme(config.theme);
 
   if (!config.brave_api_key) {
     showApiKeySetup();
@@ -57,7 +65,7 @@ async function init() {
   });
 
   appWindow.listen("show-settings", () => {
-    showApiKeySetup();
+    showSettings();
   });
 }
 
@@ -107,7 +115,8 @@ async function handleSearch(query: string) {
   readerState = {
     pages: [],
     activeIndex: 0,
-    showImages: false,
+    showImages: defaultViewMode === "text-images",
+    showRawView: defaultViewMode === "raw",
   };
 
   reader = createReader(appEl);
@@ -141,9 +150,11 @@ async function handleSearch(query: string) {
     url: r.url,
     domain: getDomain(r.url),
     article: null,
+    rawHtml: null,
     error: null,
     loading: true,
   }));
+
   reader.render(readerState);
   setupReaderKeybindings();
 
@@ -157,6 +168,7 @@ async function handleSearch(query: string) {
       if (fp.error || !fp.html) {
         page.error = fp.error || "Could not load page";
       } else {
+        page.rawHtml = fp.html;
         page.article = parseArticle(fp.html, fp.url);
       }
 
@@ -189,15 +201,17 @@ function setupReaderKeybindings() {
         }
       },
       scrollDown: () => {
-        const area = reader?.getContentArea();
-        if (area) area.scrollTop += scrollSpeed * 40;
+        reader?.scrollBy(scrollSpeed * 40);
       },
       scrollUp: () => {
-        const area = reader?.getContentArea();
-        if (area) area.scrollTop -= scrollSpeed * 40;
+        reader?.scrollBy(-(scrollSpeed * 40));
       },
       toggleImages: () => {
         readerState.showImages = !readerState.showImages;
+        reader?.render(readerState);
+      },
+      toggleRawView: () => {
+        readerState.showRawView = !readerState.showRawView;
         reader?.render(readerState);
       },
       openInBrowser: async () => {
@@ -217,6 +231,30 @@ function setupReaderKeybindings() {
     },
     scrollSpeed
   );
+}
+
+async function showSettings() {
+  currentState = "settings";
+  clearApp();
+  await appWindow.setSize(new LogicalSize(500, 600));
+  await appWindow.center();
+
+  createSettings(appEl, async () => {
+    const config = await invoke<{ scroll_speed: number; theme: string; default_view: string }>("get_config");
+    scrollSpeed = config.scroll_speed;
+    defaultViewMode = config.default_view;
+    applyTheme(config.theme);
+    showSearch();
+  });
+}
+
+function applyTheme(theme: string) {
+  const root = document.documentElement;
+  if (theme === "auto") {
+    root.removeAttribute("data-theme");
+  } else {
+    root.setAttribute("data-theme", theme);
+  }
 }
 
 async function dismissWindow() {

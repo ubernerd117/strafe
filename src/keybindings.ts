@@ -4,6 +4,7 @@ export interface KeybindingActions {
   scrollDown: () => void;
   scrollUp: () => void;
   toggleImages: () => void;
+  toggleRawView: () => void;
   openInBrowser: () => void;
   dismiss: () => void;
   focusSearch: () => void;
@@ -42,6 +43,10 @@ export function setupKeybindings(
       case "i":
         e.preventDefault();
         actions.toggleImages();
+        break;
+      case "w":
+        e.preventDefault();
+        actions.toggleRawView();
         break;
       case "o":
         e.preventDefault();

@@ -43,6 +43,7 @@ fn setup_shortcut(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     app.handle().plugin(
         tauri_plugin_global_shortcut::Builder::new()
             .with_handler(move |_app, _shortcut, event| {
+                println!("[strafe] Shortcut event: {:?}", event.state());
                 if event.state() == ShortcutState::Pressed {
                     if let Some(window) = app_handle.get_webview_window("main") {
                         if window.is_visible().unwrap_or(false) {
@@ -58,7 +59,10 @@ fn setup_shortcut(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             .build(),
     )?;
 
-    app.global_shortcut().register(shortcut)?;
+    match app.global_shortcut().register(shortcut) {
+        Ok(_) => println!("[strafe] Global shortcut Alt+Space registered successfully"),
+        Err(e) => println!("[strafe] Failed to register global shortcut: {}", e),
+    }
 
     Ok(())
 }

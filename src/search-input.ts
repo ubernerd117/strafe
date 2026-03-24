@@ -9,10 +9,11 @@ export function createSearchInput(
 ): { focus: () => void; setValue: (v: string) => void; getElement: () => HTMLElement } {
   const el = document.createElement("div");
   el.className = "search-container";
+  el.setAttribute("data-tauri-drag-region", "");
   el.innerHTML = `
-    <span class="search-icon">&#128269;</span>
-    <input class="search-input" type="text" placeholder="Search anything..." autofocus />
-    <span class="search-hint">Enter ↵</span>
+    <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input class="search-input" type="text" placeholder="search..." autofocus />
+    <span class="search-hint">enter ↵</span>
   `;
 
   const input = el.querySelector(".search-input") as HTMLInputElement;

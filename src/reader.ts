@@ -4,6 +4,7 @@ export interface ReaderPage {
   url: string;
   domain: string;
   article: ParsedArticle | null;
+  rawHtml: string | null;
   error: string | null;
   loading: boolean;
 }
@@ -12,18 +13,20 @@ export interface ReaderState {
   pages: ReaderPage[];
   activeIndex: number;
   showImages: boolean;
+  showRawView: boolean;
 }
 
 export function createReader(container: HTMLElement): {
   render: (state: ReaderState) => void;
   getContentArea: () => HTMLElement | null;
+  scrollBy: (deltaY: number) => void;
 } {
   const el = document.createElement("div");
   el.className = "reader-container";
   container.appendChild(el);
 
   function render(state: ReaderState) {
-    const { pages, activeIndex, showImages } = state;
+    const { pages, activeIndex, showImages, showRawView } = state;
 
     const tabsHtml = pages
       .map((page, i) => {
@@ -37,7 +40,9 @@ export function createReader(container: HTMLElement): {
       })
       .join("");
 
-    const hints = `<div class="tab-hints">h/l: nav · j/k: scroll · i: images · o: open · esc: close</div>`;
+    const rawIndicator = showRawView ? ' · <span style="color:var(--error)">RAW</span>' : "";
+    const imgIndicator = showImages && !showRawView ? ' · <span style="color:var(--accent)">IMG</span>' : "";
+    const hints = `<div class="tab-hints" data-tauri-drag-region>h/l: nav · j/k: scroll · i: img · w: raw · o: open · esc: close${imgIndicator}${rawIndicator}</div>`;
 
     const activePage = pages[activeIndex];
     let contentHtml = "";
@@ -61,6 +66,18 @@ export function createReader(container: HTMLElement): {
           ${activePage.error}
           <div class="retry-hint">Press / to search again</div>
         </div>`;
+    } else if (showRawView && activePage.rawHtml) {
+      // Inject <base> so relative URLs resolve against the original domain
+      const baseTag = `<base href="${activePage.url}">`;
+      const html = activePage.rawHtml.replace(/<head([^>]*)>/i, `<head$1>${baseTag}`);
+      contentHtml = `<div class="raw-view-container">
+        <iframe class="raw-view" sandbox="allow-same-origin allow-scripts"></iframe>
+      </div>`;
+      // We'll set srcdoc after innerHTML to avoid escaping issues
+      requestAnimationFrame(() => {
+        const iframe = el.querySelector(".raw-view") as HTMLIFrameElement | null;
+        if (iframe) iframe.srcdoc = html;
+      });
     } else if (activePage.article) {
       const imgClass = showImages ? "show-images" : "";
       contentHtml = `
@@ -93,5 +110,14 @@ export function createReader(container: HTMLElement): {
   return {
     render,
     getContentArea: () => el.querySelector(".content-area"),
+    scrollBy: (deltaY: number) => {
+      const iframe = el.querySelector(".raw-view") as HTMLIFrameElement | null;
+      if (iframe) {
+        try { iframe.contentWindow?.scrollBy(0, deltaY); } catch {}
+        return;
+      }
+      const area = el.querySelector(".content-area");
+      if (area) area.scrollTop += deltaY;
+    },
   };
 }
