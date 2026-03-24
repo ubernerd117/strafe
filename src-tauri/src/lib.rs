@@ -3,12 +3,76 @@ mod config;
 mod fetcher;
 mod search;
 
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::TrayIconBuilder,
+    Emitter, Manager,
+};
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+
+fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let settings_item = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
+    let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&settings_item, &quit_item])?;
+
+    TrayIconBuilder::new()
+        .icon(app.default_window_icon().cloned().expect("no app icon"))
+        .menu(&menu)
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "settings" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.emit("show-settings", ());
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+            "quit" => {
+                app.exit(0);
+            }
+            _ => {}
+        })
+        .build(app)?;
+
+    Ok(())
+}
+
+fn setup_shortcut(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let shortcut = Shortcut::new(Some(Modifiers::ALT), Code::Space);
+    let app_handle = app.handle().clone();
+
+    app.handle().plugin(
+        tauri_plugin_global_shortcut::Builder::new()
+            .with_handler(move |_app, _shortcut, event| {
+                if event.state() == ShortcutState::Pressed {
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        if window.is_visible().unwrap_or(false) {
+                            let _ = window.hide();
+                        } else {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.emit("window-shown", ());
+                        }
+                    }
+                }
+            })
+            .build(),
+    )?;
+
+    app.global_shortcut().register(shortcut)?;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .setup(|app| {
+            setup_tray(app)?;
+            setup_shortcut(app)?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::search_query,
             commands::fetch_single_page,
