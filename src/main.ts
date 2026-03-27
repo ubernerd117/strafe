@@ -36,8 +36,11 @@ let readerState: ReaderState = {
 let searchInput: ReturnType<typeof createSearchInput> | null = null;
 let reader: ReturnType<typeof createReader> | null = null;
 let cleanupKeybindings: (() => void) | null = null;
+let cleanupSettings: (() => void) | null = null;
 let scrollSpeed = 3;
 let defaultViewMode: string = "text";
+let searchGeneration = 0; // bumped on each search to invalidate stale fetches
+let isSearching = false; // guard against concurrent searches
 
 async function init() {
   const config = await invoke<{
@@ -58,6 +61,8 @@ async function init() {
     showSearch();
   }
 
+  // These listeners are registered once and persist for the app lifetime.
+  // No cleanup needed — but we must not call init() more than once.
   appWindow.listen("window-shown", () => {
     if (currentState === "search" && searchInput) {
       searchInput.focus();
@@ -65,7 +70,9 @@ async function init() {
   });
 
   appWindow.listen("show-settings", () => {
-    showSettings();
+    if (currentState !== "settings") {
+      showSettings();
+    }
   });
 }
 
@@ -74,6 +81,10 @@ function clearApp() {
   if (cleanupKeybindings) {
     cleanupKeybindings();
     cleanupKeybindings = null;
+  }
+  if (cleanupSettings) {
+    cleanupSettings();
+    cleanupSettings = null;
   }
   searchInput = null;
   reader = null;
@@ -95,6 +106,8 @@ async function showApiKeySetup() {
 
 async function showSearch() {
   currentState = "search";
+  searchGeneration++; // invalidate any in-flight fetches from previous search
+  isSearching = false;
   clearApp();
   await appWindow.setSize(new LogicalSize(600, 80));
   await appWindow.center();
@@ -107,10 +120,21 @@ async function showSearch() {
 }
 
 async function handleSearch(query: string) {
+  if (isSearching) return; // prevent concurrent searches (double-Enter)
+  isSearching = true;
+
+  const thisGeneration = ++searchGeneration;
+
   currentState = "loading";
   clearApp();
   await appWindow.setSize(new LogicalSize(800, 600));
   await appWindow.center();
+
+  // If a state transition happened during the awaits above, bail out
+  if (thisGeneration !== searchGeneration) {
+    isSearching = false;
+    return;
+  }
 
   readerState = {
     pages: [],
@@ -125,6 +149,7 @@ async function handleSearch(query: string) {
   try {
     results = await invoke<SearchResult[]>("search_query", { query });
   } catch (err) {
+    if (thisGeneration !== searchGeneration) { isSearching = false; return; }
     appEl.innerHTML = `<div class="reader-container">
       <div class="error-message">
         ${err}
@@ -132,8 +157,11 @@ async function handleSearch(query: string) {
       </div>
     </div>`;
     setupReaderKeybindings();
+    isSearching = false;
     return;
   }
+
+  if (thisGeneration !== searchGeneration) { isSearching = false; return; }
 
   if (results.length === 0) {
     appEl.innerHTML = `<div class="reader-container">
@@ -143,6 +171,7 @@ async function handleSearch(query: string) {
       </div>
     </div>`;
     setupReaderKeybindings();
+    isSearching = false;
     return;
   }
 
@@ -160,8 +189,13 @@ async function handleSearch(query: string) {
 
   // Fetch pages individually in parallel — stream results as they arrive
   currentState = "reader";
+  isSearching = false; // allow new searches once we're in reader state
+
   const fetchPromises = results.map((r, i) =>
     invoke<FetchedPage>("fetch_single_page", { url: r.url }).then((fp) => {
+      // If user started a new search, discard these stale results
+      if (thisGeneration !== searchGeneration) return;
+
       const page = readerState.pages[i];
       page.loading = false;
 
@@ -174,6 +208,7 @@ async function handleSearch(query: string) {
 
       reader!.render(readerState);
     }).catch(() => {
+      if (thisGeneration !== searchGeneration) return;
       readerState.pages[i].loading = false;
       readerState.pages[i].error = "Failed to fetch page";
       reader!.render(readerState);
@@ -239,13 +274,14 @@ async function showSettings() {
   await appWindow.setSize(new LogicalSize(500, 600));
   await appWindow.center();
 
-  createSettings(appEl, async () => {
+  const settings = createSettings(appEl, async () => {
     const config = await invoke<{ scroll_speed: number; theme: string; default_view: string }>("get_config");
     scrollSpeed = config.scroll_speed;
     defaultViewMode = config.default_view;
     applyTheme(config.theme);
     showSearch();
   });
+  cleanupSettings = settings.cleanup;
 }
 
 function applyTheme(theme: string) {

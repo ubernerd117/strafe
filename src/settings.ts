@@ -13,7 +13,7 @@ interface AppConfig {
 export function createSettings(
   container: HTMLElement,
   onClose: () => void
-): void {
+): { cleanup: () => void } {
   const el = document.createElement("div");
   el.className = "settings-container";
   el.innerHTML = `
@@ -30,15 +30,24 @@ export function createSettings(
   const body = el.querySelector(".settings-body") as HTMLElement;
   const closeBtn = el.querySelector(".settings-close") as HTMLElement;
 
-  closeBtn.addEventListener("click", onClose);
-
-  document.addEventListener("keydown", function escHandler(e: KeyboardEvent) {
+  function escHandler(e: KeyboardEvent) {
     if (e.key === "Escape") {
       e.preventDefault();
-      document.removeEventListener("keydown", escHandler);
+      cleanup();
       onClose();
     }
+  }
+
+  function cleanup() {
+    document.removeEventListener("keydown", escHandler);
+  }
+
+  closeBtn.addEventListener("click", () => {
+    cleanup();
+    onClose();
   });
+
+  document.addEventListener("keydown", escHandler);
 
   invoke<AppConfig>("get_config").then((config) => {
     body.innerHTML = `
@@ -137,4 +146,6 @@ export function createSettings(
       });
     });
   });
+
+  return { cleanup };
 }
