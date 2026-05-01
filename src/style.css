@@ -303,6 +303,12 @@ html, body {
   padding: 0;
   flex-shrink: 0;
   background: var(--bg-surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
@@ -341,16 +347,32 @@ html, body {
   color: var(--accent);
 }
 
-.tab-hints {
-  margin-left: auto;
-  padding: 10px 14px;
+/* Hints moved to .hints-bar at bottom of reader */
+
+/* ─── CONTENT WRAPPER ──────────────────── */
+
+.content-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── HINTS BAR (bottom) ───────────────── */
+
+.hints-bar {
+  padding: 6px 14px;
   font-size: 10px;
   font-family: var(--font-ui);
   color: var(--text-dim);
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
+  text-align: center;
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
   letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ─── CONTENT AREA ──────────────────────── */
@@ -805,4 +827,63 @@ select.settings-input option {
 .settings-label input[type="checkbox"] {
   margin-right: 8px;
   accent-color: var(--accent);
+}
+
+/* ─── SHORTCUTS / ALIASES ───────────────── */
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcut-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.shortcut-key {
+  width: 100px !important;
+  flex-shrink: 0;
+  text-align: center;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.shortcut-url {
+  flex: 1;
+}
+
+.shortcut-remove, .shortcut-add {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.shortcut-remove:hover {
+  background: var(--error);
+  color: white;
+  border-color: var(--error);
+}
+
+.shortcut-add {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent-dim);
+}
+
+.shortcut-add:hover {
+  background: var(--accent);
+  color: var(--bg-base);
 }

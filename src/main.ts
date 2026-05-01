@@ -23,15 +23,28 @@ interface FetchedPage {
   error: string | null;
 }
 
+interface AppConfig {
+  shortcut: string;
+  results_count: number;
+  brave_api_key: string;
+  click_outside_dismisses: boolean;
+  scroll_speed: number;
+  theme: string;
+  default_view: string;
+  shortcuts: Record<string, string>;
+}
+
 const appEl = document.getElementById("app")!;
 const appWindow = getCurrentWindow();
 
 let currentState: AppState = "search";
+let currentQuery: string = "";
 let readerState: ReaderState = {
   pages: [],
   activeIndex: 0,
   showImages: false,
   showRawView: false,
+  aiSummary: null,
 };
 let searchInput: ReturnType<typeof createSearchInput> | null = null;
 let reader: ReturnType<typeof createReader> | null = null;
@@ -39,20 +52,16 @@ let cleanupKeybindings: (() => void) | null = null;
 let cleanupSettings: (() => void) | null = null;
 let scrollSpeed = 3;
 let defaultViewMode: string = "text";
+let shortcuts: Record<string, string> = {};
 let searchGeneration = 0; // bumped on each search to invalidate stale fetches
 let isSearching = false; // guard against concurrent searches
 
 async function init() {
-  const config = await invoke<{
-    brave_api_key: string;
-    scroll_speed: number;
-    results_count: number;
-    theme: string;
-    default_view: string;
-  }>("get_config");
+  const config = await invoke<AppConfig>("get_config");
 
   scrollSpeed = config.scroll_speed;
   defaultViewMode = config.default_view;
+  shortcuts = config.shortcuts || {};
   applyTheme(config.theme);
 
   if (!config.brave_api_key) {
@@ -122,8 +131,60 @@ async function showSearch() {
 async function handleSearch(query: string) {
   if (isSearching) return; // prevent concurrent searches (double-Enter)
   isSearching = true;
+  currentQuery = query;
 
   const thisGeneration = ++searchGeneration;
+
+    // Check for shortcuts/aliases
+    const trimmedQuery = query.trim().toLowerCase();
+    if (shortcuts[trimmedQuery]) {
+        const url = shortcuts[trimmedQuery];
+        currentState = "reader";
+        clearApp();
+        await appWindow.setSize(new LogicalSize(800, 600));
+        await appWindow.center();
+
+        readerState = {
+            pages: [{
+                url,
+                domain: getDomain(url),
+                article: null,
+                rawHtml: null,
+                error: null,
+                loading: true,
+            }],
+            activeIndex: 0,
+            showImages: false,
+            showRawView: true, // Always show raw view for shortcuts
+            aiSummary: null,
+        };
+
+        reader = createReader(appEl);
+        reader.render(readerState);
+        setupReaderKeybindings();
+        isSearching = false;
+
+        try {
+            const fp = await invoke<FetchedPage>("fetch_single_page", { url });
+            if (thisGeneration !== searchGeneration) return;
+
+            const page = readerState.pages[0];
+            page.loading = false;
+            if (fp.error || !fp.html) {
+                page.error = fp.error || "Could not load page";
+            } else {
+                page.rawHtml = fp.html;
+                page.article = parseArticle(fp.html, url);
+            }
+            reader.render(readerState);
+        } catch (err) {
+            if (thisGeneration !== searchGeneration) return;
+            readerState.pages[0].loading = false;
+            readerState.pages[0].error = "Failed to fetch page";
+            reader.render(readerState);
+        }
+        return;
+    }
 
   currentState = "loading";
   clearApp();
@@ -141,6 +202,7 @@ async function handleSearch(query: string) {
     activeIndex: 0,
     showImages: defaultViewMode === "text-images",
     showRawView: defaultViewMode === "raw",
+    aiSummary: null,
   };
 
   reader = createReader(appEl);
@@ -218,6 +280,33 @@ async function handleSearch(query: string) {
   await Promise.all(fetchPromises);
 }
 
+async function handleAiSummary() {
+  const aiTabIndex = readerState.pages.length;
+  if (!currentQuery || (readerState.aiSummary && !readerState.aiSummary.error)) {
+    // Already loading or finished, just switch to tab
+    readerState.activeIndex = aiTabIndex;
+    reader?.render(readerState);
+    return;
+  }
+
+  const thisGeneration = searchGeneration;
+  readerState.aiSummary = { text: null, loading: true, error: null };
+  readerState.activeIndex = aiTabIndex;
+  reader?.render(readerState);
+
+  try {
+    const text = await invoke<string>("get_ai_summary", { query: currentQuery });
+    if (thisGeneration !== searchGeneration) return;
+
+    readerState.aiSummary = { text, loading: false, error: null };
+    reader?.render(readerState);
+  } catch (err) {
+    if (thisGeneration !== searchGeneration) return;
+    readerState.aiSummary = { text: null, loading: false, error: String(err) };
+    reader?.render(readerState);
+  }
+}
+
 function setupReaderKeybindings() {
   if (cleanupKeybindings) cleanupKeybindings();
 
@@ -230,7 +319,10 @@ function setupReaderKeybindings() {
         }
       },
       nextPage: () => {
-        if (readerState.activeIndex < readerState.pages.length - 1) {
+        const maxIndex = readerState.aiSummary
+          ? readerState.pages.length
+          : readerState.pages.length - 1;
+        if (readerState.activeIndex < maxIndex) {
           readerState.activeIndex++;
           reader?.render(readerState);
         }
@@ -261,6 +353,8 @@ function setupReaderKeybindings() {
         if (index >= 0 && index < readerState.pages.length) {
           readerState.activeIndex = index;
           reader?.render(readerState);
+        } else if (index === readerState.pages.length) {
+          handleAiSummary();
         }
       },
     },

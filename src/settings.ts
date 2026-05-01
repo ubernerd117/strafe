@@ -8,6 +8,7 @@ interface AppConfig {
   scroll_speed: number;
   theme: string;
   default_view: string;
+  shortcuts: Record<string, string>;
 }
 
 export function createSettings(
@@ -95,6 +96,29 @@ export function createSettings(
         </select>
       </div>
 
+      <div class="settings-group">
+        <label class="settings-label">Hotkeys / Aliases</label>
+        <div class="shortcuts-list">
+          ${Object.entries(config.shortcuts || {})
+            .map(
+              ([key, url]) => `
+            <div class="shortcut-item">
+              <input class="settings-input shortcut-key" type="text" placeholder="alias" value="${key}" />
+              <input class="settings-input shortcut-url" type="text" placeholder="https://..." value="${url}" />
+              <button class="shortcut-remove" title="Remove">✕</button>
+            </div>
+          `
+            )
+            .join("")}
+          <div class="shortcut-item">
+            <input class="settings-input shortcut-key new-key" type="text" placeholder="alias (e.g. sxm)" />
+            <input class="settings-input shortcut-url new-url" type="text" placeholder="https://..." />
+            <button class="shortcut-add" title="Add">＋</button>
+          </div>
+        </div>
+        <span class="settings-hint">Type the alias in the search bar to jump to the URL.</span>
+      </div>
+
       <div class="settings-actions">
         <button class="settings-save">Save</button>
         <span class="settings-status"></span>
@@ -104,12 +128,46 @@ export function createSettings(
     const saveBtn = body.querySelector(".settings-save") as HTMLButtonElement;
     const status = body.querySelector(".settings-status") as HTMLElement;
 
+    body.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains("shortcut-remove")) {
+        target.closest(".shortcut-item")?.remove();
+      }
+      if (target.classList.contains("shortcut-add")) {
+        const newItem = target.closest(".shortcut-item")!;
+        const keyInput = newItem.querySelector(".new-key") as HTMLInputElement;
+        const urlInput = newItem.querySelector(".new-url") as HTMLInputElement;
+        if (keyInput.value && urlInput.value) {
+          const div = document.createElement("div");
+          div.className = "shortcut-item";
+          div.innerHTML = `
+            <input class="settings-input shortcut-key" type="text" placeholder="alias" value="${keyInput.value}" />
+            <input class="settings-input shortcut-url" type="text" placeholder="https://..." value="${urlInput.value}" />
+            <button class="shortcut-remove" title="Remove">✕</button>
+          `;
+          newItem.before(div);
+          keyInput.value = "";
+          urlInput.value = "";
+        }
+      }
+    });
+
     saveBtn.addEventListener("click", async () => {
       const get = (field: string) =>
         (body.querySelector(`[data-field="${field}"]`) as HTMLInputElement).value;
 
       const theme = (body.querySelector('[data-field="theme"]') as HTMLSelectElement).value;
       const defaultView = (body.querySelector('[data-field="default_view"]') as HTMLSelectElement).value;
+
+      const shortcutItems = body.querySelectorAll(".shortcut-item");
+      const shortcuts: Record<string, string> = {};
+      shortcutItems.forEach((item) => {
+        const key = (item.querySelector(".shortcut-key") as HTMLInputElement)?.value?.trim();
+        const url = (item.querySelector(".shortcut-url") as HTMLInputElement)?.value?.trim();
+        if (key && url) {
+          shortcuts[key.toLowerCase()] = url;
+        }
+      });
 
       const updated: AppConfig = {
         shortcut: get("shortcut"),
@@ -119,6 +177,7 @@ export function createSettings(
         click_outside_dismisses: config.click_outside_dismisses,
         theme,
         default_view: defaultView,
+        shortcuts,
       };
 
       try {
