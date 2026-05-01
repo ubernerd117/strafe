@@ -15,6 +15,18 @@ pub async fn search_query(
 }
 
 #[tauri::command]
+pub async fn get_ai_summary(
+    app: tauri::AppHandle,
+    query: String,
+) -> Result<String, String> {
+    let config = AppConfig::load(&app);
+    if config.brave_api_key.is_empty() {
+        return Err("No API key configured".to_string());
+    }
+    search::fetch_brave_summary(&config.brave_api_key, &query).await
+}
+
+#[tauri::command]
 pub async fn fetch_single_page(url: String) -> Result<FetchedPage, String> {
     Ok(fetcher::fetch_single_page(url).await)
 }

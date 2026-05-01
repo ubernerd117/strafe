@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use tauri::Manager;
@@ -12,10 +13,14 @@ pub struct AppConfig {
     pub scroll_speed: u8,
     pub theme: String,
     pub default_view: String,
+    pub shortcuts: HashMap<String, String>,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
+        let mut shortcuts = HashMap::new();
+        shortcuts.insert("sxm".to_string(), "https://www.siriusxm.com/".to_string());
+        
         Self {
             shortcut: "Option+Space".to_string(),
             results_count: 4,
@@ -24,6 +29,7 @@ impl Default for AppConfig {
             scroll_speed: 3,
             theme: "auto".to_string(),
             default_view: "text".to_string(),
+            shortcuts,
         }
     }
 }

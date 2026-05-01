@@ -79,6 +79,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::search_query,
+            commands::get_ai_summary,
             commands::fetch_single_page,
             commands::get_config,
             commands::save_config,
