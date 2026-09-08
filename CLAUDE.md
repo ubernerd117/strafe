@@ -52,6 +52,7 @@ Vanilla TypeScript with no framework. The app is a state machine in `main.ts` wi
 
 ## Key Conventions
 
+- **Superpowers plans are ephemeral** — keep them in temporary storage outside the repository and never commit them.
 - **No framework** — DOM manipulation is direct; rendering functions return HTML strings or modify `innerHTML`
 - **Window is 600x80px, transparent, undecorated, always-on-top** — it resizes dynamically based on state (search bar vs reader)
 - **macOS-focused** — uses `macOSPrivateApi: true` for transparency; builds target macOS primarily
