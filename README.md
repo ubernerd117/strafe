@@ -44,6 +44,8 @@ No tabs. No ads. No waiting. Just the content.
 | `1`–`9` | Jump to page N |
 | `Esc` | Dismiss window |
 
+Raw view (including aliases) is an isolated, static preview. Page scripts, embedded frames, forms, and link navigation are disabled; styling and images are preserved. Keyboard controls still work after clicking inside the preview. Press `o` to use the full website in your browser.
+
 ## Setup
 
 1. Open the DMG and drag Strafe to Applications

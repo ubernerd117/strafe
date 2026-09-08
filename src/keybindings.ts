@@ -1,3 +1,5 @@
+import { getRawViewKey } from "./raw-view";
+
 export interface KeybindingActions {
   prevPage: () => void;
   nextPage: () => void;
@@ -18,8 +20,8 @@ export function setupKeybindings(
   void (scrollSpeed * 40); // scrollAmount available to callers via actions
 
   function handler(e: KeyboardEvent) {
-    const target = e.target as HTMLElement;
-    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+    const target = e.target;
+    if (target instanceof HTMLElement && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
       return;
     }
 
@@ -70,6 +72,15 @@ export function setupKeybindings(
     }
   }
 
+  function rawKeyHandler(event: MessageEvent) {
+    const key = getRawViewKey(event);
+    if (key !== null) handler(new KeyboardEvent("keydown", { key }));
+  }
+
   document.addEventListener("keydown", handler);
-  return () => document.removeEventListener("keydown", handler);
+  window.addEventListener("message", rawKeyHandler);
+  return () => {
+    document.removeEventListener("keydown", handler);
+    window.removeEventListener("message", rawKeyHandler);
+  };
 }

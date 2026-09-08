@@ -130,6 +130,27 @@ describe("app request lifecycle", () => {
     expect(document.querySelector(".search-input")).not.toBeNull();
   }
 
+  it.each(["toggle", "default", "alias"])("isolates raw content opened through %s", async (entry) => {
+    if (entry === "default") config.default_view = "raw";
+    if (entry === "alias") config.shortcuts = { docs: "https://example.com/docs" };
+    await loadApp();
+    enter(document.querySelector(".search-input"), entry === "alias" ? "docs" : "topic");
+    await flush();
+    if (entry !== "alias") {
+      searchRequests[0].resolve([{ title: "Article", url: "https://example.com/docs", description: "" }]);
+      await flush();
+    }
+    pageRequests[0].resolve({ url: "https://example.com/docs", html: '<html><body><script>parent.__TAURI__.core.invoke("attack")</script><p>Raw article</p></body></html>', error: null });
+    await flush();
+    if (entry === "toggle") document.dispatchEvent(new KeyboardEvent("keydown", { key: "w" }));
+
+    const iframe = document.querySelector(".raw-view");
+    expect(iframe).not.toBeNull();
+    expect(iframe.getAttribute("sandbox").split(/\s+/)).not.toContain("allow-same-origin");
+    expect(iframe.srcdoc).toContain("Raw article");
+    expect(iframe.srcdoc).not.toContain('invoke("attack")');
+  });
+
   it.each(["request", "resize"])("allows a new search during pending %s", async (stage) => {
     await loadApp();
     const resize = deferred();
