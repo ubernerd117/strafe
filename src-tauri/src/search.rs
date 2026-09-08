@@ -22,7 +22,17 @@ struct BraveWeb {
 struct BraveResult {
     title: String,
     url: String,
-    description: String,
+    description: Option<String>,
+}
+
+impl From<BraveResult> for SearchResult {
+    fn from(result: BraveResult) -> Self {
+        Self {
+            title: result.title,
+            url: result.url,
+            description: result.description.unwrap_or_default(),
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -190,16 +200,7 @@ pub async fn search_brave(
 
     let results = brave_resp
         .web
-        .map(|web| {
-            web.results
-                .into_iter()
-                .map(|result| SearchResult {
-                    title: result.title,
-                    url: result.url,
-                    description: result.description,
-                })
-                .collect()
-        })
+        .map(|web| web.results.into_iter().map(SearchResult::from).collect())
         .unwrap_or_default();
 
     Ok(results)
@@ -261,4 +262,46 @@ pub async fn fetch_brave_summary(
         .ok_or_else(|| "The AI overview response did not contain summary text.".to_string())?;
 
     Ok(full_summary)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{BraveResult, SearchResult};
+
+    #[test]
+    fn brave_result_without_description_converts_with_empty_description() {
+        let brave_result: BraveResult =
+            serde_json::from_str(r#"{"title":"Result","url":"https://example.com"}"#)
+                .expect("result without description should deserialize");
+
+        let result: SearchResult = brave_result.into();
+
+        assert_eq!(result.description, "");
+    }
+
+    #[test]
+    fn brave_result_with_null_description_converts_with_empty_description() {
+        let brave_result: BraveResult = serde_json::from_str(
+            r#"{"title":"Result","url":"https://example.com","description":null}"#,
+        )
+        .expect("result with null description should deserialize");
+
+        let result: SearchResult = brave_result.into();
+
+        assert_eq!(result.description, "");
+    }
+
+    #[test]
+    fn brave_result_with_description_preserves_snippet() {
+        let brave_result: BraveResult = serde_json::from_str(
+            r#"{"title":"Result","url":"https://example.com","description":"Useful snippet"}"#,
+        )
+        .expect("result with description should deserialize");
+
+        let result: SearchResult = brave_result.into();
+
+        assert_eq!(result.title, "Result");
+        assert_eq!(result.url, "https://example.com");
+        assert_eq!(result.description, "Useful snippet");
+    }
 }
