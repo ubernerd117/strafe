@@ -1,4 +1,5 @@
 import DOMPurify from "dompurify";
+import { createRawView, scrollRawView } from "./raw-view";
 import { getDomain, type ParsedArticle } from "./readability";
 
 export interface ReaderPage {
@@ -212,20 +213,11 @@ export function createReader(container: HTMLElement): {
       error.appendChild(hint);
       contentWrapper.replaceChildren(error);
     } else if (showRawView && activePage.rawHtml) {
-      const baseTag = `<base href="${activePage.url}">`;
-      const html = activePage.rawHtml.replace(
-        /<head([^>]*)>/i,
-        `<head$1>${baseTag}`,
-      );
-      contentWrapper.innerHTML = `<div class="raw-view-container">
-        <iframe class="raw-view" sandbox="allow-same-origin allow-scripts"></iframe>
-      </div>`;
-      requestAnimationFrame(() => {
-        scrollIframe = contentWrapper.querySelector(
-          ".raw-view",
-        ) as HTMLIFrameElement | null;
-        if (scrollIframe) scrollIframe.srcdoc = html;
-      });
+      const wrapper = document.createElement("div");
+      wrapper.className = "raw-view-container";
+      scrollIframe = createRawView(activePage.rawHtml, activePage.url);
+      wrapper.appendChild(scrollIframe);
+      contentWrapper.replaceChildren(wrapper);
     } else if (activePage.article) {
       const area = document.createElement("div");
       area.className = showImages ? "content-area show-images" : "content-area";
@@ -329,9 +321,7 @@ export function createReader(container: HTMLElement): {
         pendingScroll = 0;
 
         if (scrollIframe) {
-          try {
-            scrollIframe.contentWindow?.scrollBy(0, delta);
-          } catch {}
+          scrollRawView(scrollIframe, delta);
           return;
         }
         if (scrollTarget) {
@@ -344,9 +334,7 @@ export function createReader(container: HTMLElement): {
         ) as HTMLIFrameElement | null;
         if (iframe) {
           scrollIframe = iframe;
-          try {
-            iframe.contentWindow?.scrollBy(0, delta);
-          } catch {}
+          scrollRawView(iframe, delta);
         } else {
           const area = contentWrapper.querySelector(
             ".content-area",
