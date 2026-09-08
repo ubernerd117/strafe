@@ -52,6 +52,7 @@ describe("app request lifecycle", () => {
   let config;
   let searchRequests;
   let pageRequests;
+  let aiRequests;
 
   beforeEach(() => {
     vi.resetModules();
@@ -62,6 +63,7 @@ describe("app request lifecycle", () => {
     config = { ...defaultConfig, shortcuts: {} };
     searchRequests = [];
     pageRequests = [];
+    aiRequests = [];
     tauri.listeners.clear();
     tauri.invoke.mockReset();
     tauri.appWindow.setSize.mockReset().mockResolvedValue(undefined);
@@ -78,6 +80,11 @@ describe("app request lifecycle", () => {
       if (command === "search_query") {
         const request = { args, ...deferred() };
         searchRequests.push(request);
+        return request.promise;
+      }
+      if (command === "get_ai_summary") {
+        const request = { args, ...deferred() };
+        aiRequests.push(request);
         return request.promise;
       }
       if (command === "fetch_single_page") {
@@ -122,6 +129,100 @@ describe("app request lifecycle", () => {
     await flush();
     expect(document.querySelector(".search-input")).not.toBeNull();
   }
+
+  it.each(["request", "resize"])("allows a new search during pending %s", async (stage) => {
+    await loadApp();
+    const resize = deferred();
+    if (stage === "resize") tauri.appWindow.setSize.mockImplementationOnce(() => resize.promise);
+    enter(document.querySelector(".search-input"), "old");
+    await flush();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "/" }));
+    await flush();
+    expect(document.querySelector(".search-input")).not.toBeNull();
+    enter(document.querySelector(".search-input"), "new");
+    await flush();
+    resize.resolve();
+    await flush();
+    expect(searchRequests.at(-1).args.query).toBe("new");
+  });
+
+  it.each(["request", "resize"])("allows dismissal during pending %s", async (stage) => {
+    await loadApp();
+    const resize = deferred();
+    if (stage === "resize") tauri.appWindow.setSize.mockImplementationOnce(() => resize.promise);
+    enter(document.querySelector(".search-input"), "old");
+    await flush();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await flush();
+    expect(tauri.appWindow.hide).toHaveBeenCalledOnce();
+    resize.resolve();
+    await flush();
+    expect(document.querySelector(".search-input")).not.toBeNull();
+  });
+
+  it("discards a response arriving while dismissal is pending", async () => {
+    await loadApp();
+    enter(document.querySelector(".search-input"), "old");
+    await flush();
+    const hide = deferred();
+    tauri.appWindow.hide.mockImplementationOnce(() => hide.promise);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    searchRequests[0].resolve([{ title: "Old", url: "https://old.example", description: "" }]);
+    await flush();
+    expect(pageRequests).toHaveLength(0);
+    hide.resolve();
+    await flush();
+  });
+
+  it.each(["resolve", "reject"])("ignores old search %s after restarting with /", async (settlement) => {
+    await loadApp();
+    enter(document.querySelector(".search-input"), "old");
+    await flush();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "/" }));
+    await flush();
+    expect(document.querySelector(".search-input")).not.toBeNull();
+    enter(document.querySelector(".search-input"), "new");
+    await flush();
+    searchRequests[1].resolve([]);
+    await flush();
+    const newerView = document.getElementById("app").innerHTML;
+    if (settlement === "resolve") searchRequests[0].resolve([{ title: "Old", url: "https://old.example", description: "" }]);
+    else searchRequests[0].reject("Old failure");
+    await flush();
+    expect(document.getElementById("app").innerHTML).toBe(newerView);
+    expect(pageRequests).toHaveLength(0);
+  });
+
+  it.each(["resolve", "reject"])("ignores old AI %s after starting a newer search", async (settlement) => {
+    await loadApp();
+    enter(document.querySelector(".search-input"), "old");
+    await flush();
+    searchRequests[0].resolve([{ title: "Old", url: "https://old.example", description: "" }]);
+    await flush();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "2" }));
+    await flush();
+    expect(aiRequests).toHaveLength(1);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "/" }));
+    await flush();
+    enter(document.querySelector(".search-input"), "new");
+    await flush();
+    const newerView = document.getElementById("app").innerHTML;
+    if (settlement === "resolve") aiRequests[0].resolve("Old summary");
+    else aiRequests[0].reject("Old failure");
+    await flush();
+    expect(document.getElementById("app").innerHTML).toBe(newerView);
+  });
+
+  it("replaces the search loading message when results arrive", async () => {
+    await loadApp();
+    enter(document.querySelector(".search-input"), "topic");
+    await flush();
+    expect(document.querySelector('[role="status"]')?.textContent).toContain("Searching");
+    searchRequests[0].resolve([{ title: "Result", url: "https://example.com", description: "" }]);
+    await flush();
+    expect(document.querySelector('[role="status"]')).toBeNull();
+    expect(document.querySelectorAll(".reader-container")).toHaveLength(1);
+  });
 
   it("reloads saved aliases when Settings closes", async () => {
     await loadApp();
