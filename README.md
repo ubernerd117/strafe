@@ -21,7 +21,7 @@
 
 ## Download
 
-**[Download Strafe for macOS (Apple Silicon)](https://github.com/ubernerd117/strafe/releases/latest/download/Strafe_0.1.0_aarch64.dmg)** — 5.9 MB
+**[Download Strafe for macOS (Apple Silicon)](https://github.com/ubernerd117/strafe/releases/latest)**
 
 > Requires macOS 10.15+. On first launch, grant Accessibility permission for the global shortcut.
 
