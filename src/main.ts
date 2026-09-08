@@ -193,6 +193,20 @@ async function handleSearch(query: string) {
 
   currentState = "loading";
   clearApp();
+  appEl.innerHTML = `<div class="reader-container"><div class="error-message" role="status">
+    Searching…<div class="retry-hint">Escape to dismiss · / to search again</div>
+  </div></div>`;
+  const loadingKeydown = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      void dismissWindow();
+    } else if (event.key === "/") {
+      event.preventDefault();
+      void showSearch();
+    }
+  };
+  document.addEventListener("keydown", loadingKeydown);
+  cleanupKeybindings = () => document.removeEventListener("keydown", loadingKeydown);
   await appWindow.setSize(new LogicalSize(800, 600));
   await appWindow.center();
 
@@ -208,8 +222,6 @@ async function handleSearch(query: string) {
     showRawView: defaultViewMode === "raw",
     aiSummary: null,
   };
-
-  reader = createReader(appEl);
 
   let results: SearchResult[];
   try {
@@ -241,6 +253,8 @@ async function handleSearch(query: string) {
     return;
   }
 
+  appEl.replaceChildren();
+  reader = createReader(appEl);
   readerState.pages = results.map((r) => ({
     url: r.url,
     domain: getDomain(r.url),
@@ -394,8 +408,10 @@ function applyTheme(theme: string) {
 }
 
 async function dismissWindow() {
+  const thisGeneration = ++searchGeneration;
   await appWindow.hide();
-  showSearch();
+  if (thisGeneration !== searchGeneration) return;
+  void showSearch();
 }
 
 init();
