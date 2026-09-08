@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import { getDomain, type ParsedArticle } from "./readability";
 
 export interface ReaderPage {
@@ -78,35 +79,36 @@ export function createReader(container: HTMLElement): {
   function renderTabs(state: ReaderState) {
     const { pages, activeIndex, aiSummary } = state;
     const aiTabIndex = pages.length;
-    let tabsHtml = pages
-      .map((page, i) => {
-        const active = i === activeIndex ? "active" : "";
-        const label = page.loading
-          ? "Loading..."
-          : page.domain || getDomain(page.url);
-        return `<div class="tab ${active}" data-index="${i}">
-          <span class="tab-number">${i + 1}</span> ${label}
-        </div>`;
-      })
-      .join("");
+    tabBar.replaceChildren();
+    pages.forEach((page, i) => {
+      const tab = document.createElement("div");
+      tab.className = i === activeIndex ? "tab active" : "tab";
+      tab.dataset.index = String(i);
+      const number = document.createElement("span");
+      number.className = "tab-number";
+      number.textContent = String(i + 1);
+      const label = page.loading
+        ? "Loading..."
+        : page.domain || getDomain(page.url);
+      tab.append(number, ` ${label}`);
+      tabBar.appendChild(tab);
+    });
 
     if (aiSummary) {
       const active = activeIndex === aiTabIndex ? "active" : "";
-      tabsHtml += `<div class="tab ${active} ai-tab" data-index="${aiTabIndex}">
+      tabBar.insertAdjacentHTML("beforeend", `<div class="tab ${active} ai-tab" data-index="${aiTabIndex}">
         <span class="tab-number">${aiTabIndex + 1}</span> Overview
-      </div>`;
+      </div>`);
     } else {
       const aiHintNumber = aiTabIndex + 1;
-      tabsHtml += `<div class="tab-hint" style="padding: 10px 14px; font-size: 11px; font-family: var(--font-ui); color: var(--text-dim); opacity: 0.5;">
+      tabBar.insertAdjacentHTML("beforeend", `<div class="tab-hint" style="padding: 10px 14px; font-size: 11px; font-family: var(--font-ui); color: var(--text-dim); opacity: 0.5;">
         <span class="tab-number">${aiHintNumber}</span> Press ${aiHintNumber} for AI
-      </div>`;
+      </div>`);
     }
 
-    tabBar.innerHTML = tabsHtml;
-
-    tabBar.querySelectorAll(".tab").forEach((tab) => {
+    tabBar.querySelectorAll<HTMLElement>(".tab").forEach((tab) => {
       tab.addEventListener("click", () => {
-        const index = parseInt((tab as HTMLElement).dataset.index || "0");
+        const index = parseInt(tab.dataset.index || "0");
         if (stateRef) {
           stateRef.activeIndex = index;
           render(stateRef);
@@ -114,7 +116,7 @@ export function createReader(container: HTMLElement): {
       });
     });
 
-    const activeTab = tabBar.querySelector(".tab.active") as HTMLElement | null;
+    const activeTab = tabBar.querySelector<HTMLElement>(".tab.active");
     if (activeTab) {
       requestAnimationFrame(() => {
         activeTab.scrollIntoView({
@@ -152,28 +154,32 @@ export function createReader(container: HTMLElement): {
           errorText.includes("unavailable") ||
           errorText.includes("not available") ||
           errorText.includes("requires");
-        const retryHint = isUnavailable 
-          ? "Try a more general search query." 
+        const retryHint = isUnavailable
+          ? "Try a more general search query."
           : `Press ${aiTabNumber} to retry`;
-        
-        contentWrapper.innerHTML = `
-          <div class="error-message">
-            ${aiSummary.error}
-            <div class="retry-hint">${retryHint}</div>
-          </div>`;
+
+        const error = document.createElement("div");
+        error.className = "error-message";
+        error.textContent = aiSummary.error;
+        const hint = document.createElement("div");
+        hint.className = "retry-hint";
+        hint.textContent = retryHint;
+        error.appendChild(hint);
+        contentWrapper.replaceChildren(error);
       } else if (aiSummary.text) {
         contentWrapper.innerHTML = `
           <div class="content-area">
             <div class="content-source">BRAVE AI OVERVIEW</div>
-            <div class="ai-content" style="font-family: var(--font-body); line-height: 1.8; font-size: 15px; color: var(--text-secondary);">
-              ${aiSummary.text
-                .split("\n")
-                .map((p) =>
-                  p.trim() ? `<p style="margin-bottom: 1.2em;">${p}</p>` : "",
-                )
-                .join("")}
-            </div>
+            <div class="ai-content" style="font-family: var(--font-body); line-height: 1.8; font-size: 15px; color: var(--text-secondary);"></div>
           </div>`;
+        const aiContent = contentWrapper.querySelector(".ai-content");
+        for (const line of aiSummary.text.split("\n")) {
+          if (!line.trim()) continue;
+          const paragraph = document.createElement("p");
+          paragraph.style.marginBottom = "1.2em";
+          paragraph.textContent = line;
+          aiContent?.appendChild(paragraph);
+        }
         scrollTarget = contentWrapper.querySelector(".content-area");
       }
       return;
@@ -197,11 +203,14 @@ export function createReader(container: HTMLElement): {
           <div class="loading-progress">${readyCount} of ${pages.length} ready</div>
         </div>`;
     } else if (activePage.error) {
-      contentWrapper.innerHTML = `
-        <div class="error-message">
-          ${activePage.error}
-          <div class="retry-hint">Press / to search again</div>
-        </div>`;
+      const error = document.createElement("div");
+      error.className = "error-message";
+      error.textContent = activePage.error;
+      const hint = document.createElement("div");
+      hint.className = "retry-hint";
+      hint.textContent = "Press / to search again";
+      error.appendChild(hint);
+      contentWrapper.replaceChildren(error);
     } else if (showRawView && activePage.rawHtml) {
       const baseTag = `<base href="${activePage.url}">`;
       const html = activePage.rawHtml.replace(
@@ -218,13 +227,21 @@ export function createReader(container: HTMLElement): {
         if (scrollIframe) scrollIframe.srcdoc = html;
       });
     } else if (activePage.article) {
-      const imgClass = showImages ? "show-images" : "";
-      contentWrapper.innerHTML = `
-        <div class="content-area ${imgClass}">
-          <div class="content-source">${activePage.domain || getDomain(activePage.url)}</div>
-          ${activePage.article.content}
-        </div>`;
-      scrollTarget = contentWrapper.querySelector(".content-area");
+      const area = document.createElement("div");
+      area.className = showImages ? "content-area show-images" : "content-area";
+      const source = document.createElement("div");
+      source.className = "content-source";
+      source.textContent = activePage.domain || getDomain(activePage.url);
+      // Readability extracts content; it does not make HTML safe for the app DOM.
+      area.append(source, DOMPurify.sanitize(activePage.article.content, {
+        USE_PROFILES: { html: true },
+        FORBID_TAGS: ["style", "form", "input", "button", "textarea", "select"],
+        FORBID_ATTR: ["style"],
+        ALLOW_DATA_ATTR: false,
+        RETURN_DOM_FRAGMENT: true,
+      }));
+      contentWrapper.replaceChildren(area);
+      scrollTarget = area;
     } else {
       contentWrapper.innerHTML = `
         <div class="no-content">
