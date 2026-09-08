@@ -137,12 +137,17 @@ async function handleSearch(query: string) {
 
     // Check for shortcuts/aliases
     const trimmedQuery = query.trim().toLowerCase();
-    if (shortcuts[trimmedQuery]) {
+    if (
+      Object.prototype.hasOwnProperty.call(shortcuts, trimmedQuery) &&
+      shortcuts[trimmedQuery]
+    ) {
         const url = shortcuts[trimmedQuery];
         currentState = "reader";
         clearApp();
         await appWindow.setSize(new LogicalSize(800, 600));
         await appWindow.center();
+
+        if (thisGeneration !== searchGeneration) return;
 
         readerState = {
             pages: [{
@@ -193,7 +198,6 @@ async function handleSearch(query: string) {
 
   // If a state transition happened during the awaits above, bail out
   if (thisGeneration !== searchGeneration) {
-    isSearching = false;
     return;
   }
 
@@ -211,7 +215,7 @@ async function handleSearch(query: string) {
   try {
     results = await invoke<SearchResult[]>("search_query", { query });
   } catch (err) {
-    if (thisGeneration !== searchGeneration) { isSearching = false; return; }
+    if (thisGeneration !== searchGeneration) return;
     appEl.innerHTML = `<div class="reader-container">
       <div class="error-message">
         ${err}
@@ -223,7 +227,7 @@ async function handleSearch(query: string) {
     return;
   }
 
-  if (thisGeneration !== searchGeneration) { isSearching = false; return; }
+  if (thisGeneration !== searchGeneration) return;
 
   if (results.length === 0) {
     appEl.innerHTML = `<div class="reader-container">
@@ -364,14 +368,16 @@ function setupReaderKeybindings() {
 
 async function showSettings() {
   currentState = "settings";
+  searchGeneration++;
   clearApp();
   await appWindow.setSize(new LogicalSize(500, 600));
   await appWindow.center();
 
   const settings = createSettings(appEl, async () => {
-    const config = await invoke<{ scroll_speed: number; theme: string; default_view: string }>("get_config");
+    const config = await invoke<Pick<AppConfig, "scroll_speed" | "theme" | "default_view" | "shortcuts">>("get_config");
     scrollSpeed = config.scroll_speed;
     defaultViewMode = config.default_view;
+    shortcuts = config.shortcuts || {};
     applyTheme(config.theme);
     showSearch();
   });

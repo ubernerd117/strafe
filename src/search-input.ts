@@ -19,7 +19,12 @@ export function createSearchInput(
   const input = el.querySelector(".search-input") as HTMLInputElement;
 
   input.addEventListener("keydown", (e: KeyboardEvent) => {
-    if (e.key === "Enter" && input.value.trim()) {
+    if (
+      e.key === "Enter" &&
+      !e.isComposing &&
+      e.keyCode !== 229 &&
+      input.value.trim()
+    ) {
       e.preventDefault();
       callbacks.onSearch(input.value.trim());
     }
