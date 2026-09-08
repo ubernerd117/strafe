@@ -11,11 +11,13 @@ Strafe is a Tauri v2 desktop app — a keyboard-driven web reader activated via 
 ```bash
 npm run dev              # Vite dev server on localhost:1420
 npm run build            # TypeScript compile + Vite bundle → dist/
+npm run lint             # Strict TypeScript static checks (tsc --noEmit)
+npm run test             # Vitest regression tests in jsdom
 npm run tauri dev        # Full dev mode (Vite + Rust hot-reload)
 npm run tauri build      # Production build → DMG/app bundle
 ```
 
-Rust backend builds are managed by Tauri CLI (`cargo build` happens under `npm run tauri dev/build`). No test suite or linter is configured.
+Rust backend builds are managed by Tauri CLI (`cargo build` happens under `npm run tauri dev/build`). Run backend unit tests with `cargo test --manifest-path src-tauri/Cargo.toml`. Frontend regression tests live in `tests/` and mock the native Tauri boundary; lint uses the existing strict TypeScript compiler checks.
 
 ## Architecture
 
