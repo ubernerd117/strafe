@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://strafe.sourab.tech/sitemap.xml
