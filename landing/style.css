@@ -57,6 +57,8 @@ kbd{display:inline-flex;align-items:center;justify-content:center;min-width:23px
 #article h3{margin:18px 0}
 #article-copy{color:#b4bfaa}
 #article-copy p{margin:0 0 16px}
+#article-copy pre{max-width:100%;overflow-x:auto;margin:0 0 16px;padding:16px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);white-space:pre}
+#article-copy code{font:400 var(--type-ui)/1.6 var(--mono)}
 #article-copy h4{color:#e0e6d6;margin:24px 0 10px}
 .reader-footer{display:flex;align-items:center;gap:17px;border-top:1px solid #30372e;padding:11px 16px;color:#a4af9c;}
 .reader-footer kbd{height:17px;min-width:17px;padding:0 3px}

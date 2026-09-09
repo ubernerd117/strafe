@@ -40,10 +40,20 @@
     <div class="floating-label"><span class="status-dot"></span> TRY h / l TO CHANGE ARTICLES</div>
     <div class="app-window" id="demo" tabindex="0" aria-label="Interactive Strafe demo. Use h and l to change articles, j and k to scroll, slash to search, Escape to dismiss.">
       <div class="window-chrome"><span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span><span>strafe <span class="muted">/ reader</span></span><button id="reset" class="text-button">Reset ↺</button></div>
-      <form id="search-form"><label class="search-icon" for="query" aria-label="Sample search">⌕</label><input id="query" value="reading on a screen" readonly aria-label="Sample search: reading on a screen"><button class="search-submit" type="submit">Search <span aria-hidden="true">↵</span></button></form>
+      <form id="search-form"><label class="search-icon" for="query" aria-label="Sample search">⌕</label><input id="query" value="rust sort vec of structs by field" readonly aria-label="Sample search: rust sort vec of structs by field"><button class="search-submit" type="submit">Search <span aria-hidden="true">↵</span></button></form>
       <div id="reader">
-        <div class="article-tabs" role="tablist" aria-label="Sample articles"><button id="tab-0" role="tab" aria-controls="article" aria-selected="true" data-page="0"><span>1</span> Screen reading</button><button id="tab-1" role="tab" aria-controls="article" aria-selected="false" tabindex="-1" data-page="1"><span>2</span> Check a source</button><button id="tab-2" role="tab" aria-controls="article" aria-selected="false" tabindex="-1" data-page="2"><span>3</span> Reading notes</button></div>
-        <article id="article" role="tabpanel" aria-labelledby="tab-0" tabindex="0"><div class="article-source">FIELD NOTES <span>·</span> SAMPLE ARTICLE <span>·</span> <span id="page-number">01 / 03</span></div><h3 id="article-title">Reading on<br>a screen.</h3><div id="article-copy"><p>You opened an essay someone sent you, or searched for a reference you need for your work. You want to read it and get back to what you were doing.</p><p>Give that page your attention. Read at your own pace, follow a thought, and leave when you have what you need.</p><h4>Start with the words</h4><p>On a quiet page, you can spend your time with the writing. Choose a comfortable line length and leave enough room between paragraphs.</p></div></article>
+        <div class="article-tabs" role="tablist" aria-label="Sample articles"><button id="tab-0" role="tab" aria-controls="article" aria-selected="true" data-page="0"><span>1</span> sort_by_key</button><button id="tab-1" role="tab" aria-controls="article" aria-selected="false" tabindex="-1" data-page="1"><span>2</span> Descending</button><button id="tab-2" role="tab" aria-controls="article" aria-selected="false" tabindex="-1" data-page="2"><span>3</span> Stable vs. unstable</button></div>
+        <article id="article" role="tabpanel" aria-labelledby="tab-0" tabindex="0"><div class="article-source">RUST <span>·</span> SAMPLE ARTICLE <span>·</span> <span id="page-number">01 / 03</span></div><h3 id="article-title">Sort a Vec<br>by a field.</h3><div id="article-copy"><p>Use sort_by_key() with a closure that returns the field to compare. Here, users are ordered by score, lowest first.</p><pre><code>struct User {
+    score: u32,
+}
+
+let mut users = vec![
+    User { score: 92 },
+    User { score: 98 },
+];
+
+users.sort_by_key(|u| u.score);
+assert_eq!(users[0].score, 92);</code></pre><h4>The vector changes in place</h4><p>The method sorts the existing elements and returns (). Keep the Vec mutable; no new sorted vector is returned.</p></div></article>
         <div class="reader-footer"><span><kbd>h</kbd> <kbd>l</kbd> change page</span><span><kbd>j</kbd> <kbd>k</kbd> scroll</span><span><kbd>esc</kbd> close</span><span class="reader-mode"><span class="status-dot"></span> READER VIEW</span></div>
       </div>
       <div id="empty-state" hidden><span class="empty-symbol" aria-hidden="true">⌕</span><p>Try the sample search.</p><span>Press Enter or click Search to open the reader.</span></div>

@@ -37,7 +37,7 @@ The canonical URL, social metadata, robots file, and sitemap use `https://strafe
 
 See [Vercel build settings](https://vercel.com/docs/builds/configure-a-build) and [custom domain setup](https://vercel.com/docs/domains/working-with-domains/add-a-domain).
 
-The interactive reader uses three original sample articles. The fixed sample search does not call an API. Click the reader to use h/l, j/k, 1–3, slash, and Escape; use article tabs or arrow buttons on touch devices. Download links open the project's latest GitHub release.
+The interactive reader uses three original Rust examples for the query “rust sort vec of structs by field”: sort_by_key(), descending order with Reverse, and stable versus unstable sorting. The syntax follows the [Rust slice documentation](https://doc.rust-lang.org/std/primitive.slice.html#method.sort_by_key); these are authored samples, not fetched search results. The fixed sample search does not call an API. Click the reader to use h/l, j/k, 1–3, slash, and Escape; use article tabs or arrow buttons on touch devices. Download links open the project's latest GitHub release.
 
 Both the app and this page load bundled Google Fonts from `fonts/`: Syne for editorial labels, DM Sans for headings and body text, IBM Plex Mono for key hints, and Literata for the reader. The font files work offline; their OFL licenses sit alongside them. `fonts.css` defines the shared faces. The arrow geometry matches `../branding/mark.svg`, and `app-icon.svg` provides the favicon.
 
