@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { open as shellOpen } from "@tauri-apps/plugin-shell";
+import "../landing/fonts.css";
 import "./style.css";
 import { createSearchInput, createApiKeySetup } from "./search-input";
 import { createReader, type ReaderState } from "./reader";
@@ -102,7 +103,7 @@ function clearApp() {
 async function showApiKeySetup() {
   currentState = "api-key-setup";
   clearApp();
-  await appWindow.setSize(new LogicalSize(500, 140));
+  await appWindow.setSize(new LogicalSize(500, 220));
   await appWindow.center();
 
   createApiKeySetup(appEl, async (key: string) => {
