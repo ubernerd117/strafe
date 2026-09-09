@@ -1,3 +1,4 @@
+import { brandWordmark } from "./brand";
 import { invoke } from "@tauri-apps/api/core";
 
 interface AppConfig {
@@ -19,8 +20,9 @@ export function createSettings(
   el.className = "settings-container";
   el.innerHTML = `
     <div class="settings-header" data-tauri-drag-region>
+      ${brandWordmark}
       <h2 data-tauri-drag-region>Settings</h2>
-      <span class="settings-close" title="Close (Esc)">✕</span>
+      <button class="settings-close" type="button" aria-label="Close settings" title="Close (Esc)">✕</button>
     </div>
     <div class="settings-body">
       <div class="settings-loading">Loading...</div>
@@ -111,7 +113,7 @@ export function createSettings(
             )
             .join("")}
           <div class="shortcut-item">
-            <input class="settings-input shortcut-key new-key" type="text" placeholder="alias (e.g. sxm)" />
+            <input class="settings-input shortcut-key new-key" type="text" placeholder="Alias" />
             <input class="settings-input shortcut-url new-url" type="text" placeholder="https://..." />
             <button class="shortcut-add" title="Add">＋</button>
           </div>
@@ -188,11 +190,11 @@ export function createSettings(
         } else {
           document.documentElement.setAttribute("data-theme", updated.theme);
         }
-        status.textContent = "Saved! Restart app for shortcut changes.";
-        status.style.color = "#9ece6a";
+        status.textContent = "Settings saved. Restart Strafe to apply shortcut changes.";
+        status.style.color = "var(--success)";
       } catch (err) {
         status.textContent = `Error: ${err}`;
-        status.style.color = "#f7768e";
+        status.style.color = "var(--error)";
       }
     });
 

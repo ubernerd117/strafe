@@ -15,8 +15,16 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&settings_item, &quit_item])?;
 
+    // The menu bar uses a template silhouette; macOS supplies the foreground color.
+    let tray_icon = tauri::image::Image::new_owned(
+        include_bytes!("../icons/tray-template.rgba").to_vec(),
+        32,
+        32,
+    );
     TrayIconBuilder::new()
-        .icon(app.default_window_icon().cloned().expect("no app icon"))
+        .icon(tray_icon)
+        .icon_as_template(true)
+        .tooltip("Strafe")
         .menu(&menu)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "settings" => {

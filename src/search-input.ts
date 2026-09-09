@@ -1,3 +1,5 @@
+import { brandMark, brandWordmark } from "./brand";
+
 export interface SearchInputCallbacks {
   onSearch: (query: string) => void;
   onDismiss: () => void;
@@ -11,8 +13,8 @@ export function createSearchInput(
   el.className = "search-container";
   el.setAttribute("data-tauri-drag-region", "");
   el.innerHTML = `
-    <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input class="search-input" type="text" placeholder="search..." autofocus />
+    ${brandMark}
+    <input class="search-input" type="text" placeholder="Search" aria-label="Search" autofocus />
     <span class="search-hint">enter ↵</span>
   `;
 
@@ -55,8 +57,10 @@ export function createApiKeySetup(
   const el = document.createElement("div");
   el.className = "api-key-container";
   el.innerHTML = `
-    <h3>Enter your Brave Search API key to get started</h3>
-    <input class="api-key-input" type="text" placeholder="BSA..." />
+    ${brandWordmark}
+    <h3>Brave Search API key</h3>
+    <label class="api-key-label" for="brave-api-key">Enter your key to search the web.</label>
+    <input id="brave-api-key" class="api-key-input" type="password" placeholder="BSA…" autocomplete="off" />
     <button class="api-key-save">Save</button>
   `;
 

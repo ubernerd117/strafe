@@ -102,7 +102,7 @@ export function createReader(container: HTMLElement): {
       </div>`);
     } else {
       const aiHintNumber = aiTabIndex + 1;
-      tabBar.insertAdjacentHTML("beforeend", `<div class="tab-hint" style="padding: 10px 14px; font-size: 11px; font-family: var(--font-ui); color: var(--text-dim); opacity: 0.5;">
+      tabBar.insertAdjacentHTML("beforeend", `<div class="tab-hint">
         <span class="tab-number">${aiHintNumber}</span> Press ${aiHintNumber} for AI
       </div>`);
     }
@@ -171,7 +171,7 @@ export function createReader(container: HTMLElement): {
         contentWrapper.innerHTML = `
           <div class="content-area">
             <div class="content-source">BRAVE AI OVERVIEW</div>
-            <div class="ai-content" style="font-family: var(--font-body); line-height: 1.8; font-size: 15px; color: var(--text-secondary);"></div>
+            <div class="ai-content"></div>
           </div>`;
         const aiContent = contentWrapper.querySelector(".ai-content");
         for (const line of aiSummary.text.split("\n")) {
