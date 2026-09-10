@@ -1,6 +1,46 @@
 import DOMPurify from "dompurify";
+import { Marked } from "marked";
+import { open as shellOpen } from "@tauri-apps/plugin-shell";
 import { createRawView, scrollRawView } from "./raw-view";
 import { getDomain, type ParsedArticle } from "./readability";
+
+const overviewMarkdown = new Marked({
+  gfm: true,
+  renderer: {
+    // Model-provided HTML is readable text, never app markup.
+    html({ text }) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    },
+  },
+});
+
+function renderOverviewMarkdown(text: string): DocumentFragment {
+  const content = DOMPurify.sanitize(overviewMarkdown.parse(text, { async: false }), {
+    ALLOWED_TAGS: [
+      "p", "br", "h1", "h2", "h3", "h4", "h5", "h6", "strong", "em", "del",
+      "ul", "ol", "li", "blockquote", "hr", "a", "pre", "code",
+      "table", "thead", "tbody", "tr", "th", "td",
+    ],
+    ALLOWED_ATTR: ["href", "title", "start", "align"],
+    ALLOWED_URI_REGEXP: /^https?:\/\//i,
+    ALLOW_DATA_ATTR: false,
+    ALLOW_ARIA_ATTR: false,
+    RETURN_DOM_FRAGMENT: true,
+  });
+  content.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      const href = link.getAttribute("href");
+      if (href) {
+        void shellOpen(href).catch(() => {
+          link.title = "Unable to open link in browser.";
+        });
+      }
+    });
+    link.addEventListener("auxclick", (event) => event.preventDefault());
+  });
+  return content;
+}
 
 export interface ReaderPage {
   url: string;
@@ -100,11 +140,6 @@ export function createReader(container: HTMLElement): {
       tabBar.insertAdjacentHTML("beforeend", `<div class="tab ${active} ai-tab" data-index="${aiTabIndex}">
         <span class="tab-number">${aiTabIndex + 1}</span> Overview
       </div>`);
-    } else {
-      const aiHintNumber = aiTabIndex + 1;
-      tabBar.insertAdjacentHTML("beforeend", `<div class="tab-hint">
-        <span class="tab-number">${aiHintNumber}</span> Press ${aiHintNumber} for AI
-      </div>`);
     }
 
     tabBar.querySelectorAll<HTMLElement>(".tab").forEach((tab) => {
@@ -151,13 +186,18 @@ export function createReader(container: HTMLElement): {
       } else if (aiSummary.error) {
         const aiTabNumber = aiTabIndex + 1;
         const errorText = aiSummary.error.toLowerCase();
+        const isAnswersSetupError =
+          errorText.includes("brave answers api key") ||
+          errorText.includes("answers key");
         const isUnavailable =
           errorText.includes("unavailable") ||
           errorText.includes("not available") ||
           errorText.includes("requires");
-        const retryHint = isUnavailable
-          ? "Try a more general search query."
-          : `Press ${aiTabNumber} to retry`;
+        const retryHint = isAnswersSetupError
+          ? "Check your Brave Answers API key and plan in Settings."
+          : isUnavailable
+            ? "Try a more general search query."
+            : `Press ${aiTabNumber} to retry`;
 
         const error = document.createElement("div");
         error.className = "error-message";
@@ -174,13 +214,7 @@ export function createReader(container: HTMLElement): {
             <div class="ai-content"></div>
           </div>`;
         const aiContent = contentWrapper.querySelector(".ai-content");
-        for (const line of aiSummary.text.split("\n")) {
-          if (!line.trim()) continue;
-          const paragraph = document.createElement("p");
-          paragraph.style.marginBottom = "1.2em";
-          paragraph.textContent = line;
-          aiContent?.appendChild(paragraph);
-        }
+        aiContent?.appendChild(renderOverviewMarkdown(aiSummary.text));
         scrollTarget = contentWrapper.querySelector(".content-area");
       }
       return;
@@ -244,7 +278,7 @@ export function createReader(container: HTMLElement): {
   }
 
   function renderHints(state: ReaderState) {
-    const { pages, showImages, showRawView, aiSummary } = state;
+    const { showImages, showRawView } = state;
     const rawIndicator = showRawView
       ? ' · <span style="color:var(--error)">RAW</span>'
       : "";
@@ -252,11 +286,7 @@ export function createReader(container: HTMLElement): {
       showImages && !showRawView
         ? ' · <span style="color:var(--accent)">IMG</span>'
         : "";
-    const aiTabNumber = pages.length + 1;
-    const aiHint = !aiSummary
-      ? ` · <span style="color:var(--accent)">${aiTabNumber}: AI</span>`
-      : "";
-    hintsBar.innerHTML = `h/l: nav · j/k: scroll · i: img · w: raw · o: open · /: search · esc: close${imgIndicator}${rawIndicator}${aiHint}`;
+    hintsBar.innerHTML = `h/l: nav · j/k: scroll · i: img · w: raw · o: open · /: search · esc: close${imgIndicator}${rawIndicator}`;
   }
 
   function render(state: ReaderState) {

@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createReader } from "../src/reader";
 import { parseArticle } from "../src/readability";
+import { open as shellOpen } from "@tauri-apps/plugin-shell";
+
+vi.mock("@tauri-apps/plugin-shell", () => ({ open: vi.fn().mockResolvedValue(undefined) }));
 
 const payload = '<img src=x onerror="window.readerExecuted=true">';
 
@@ -34,6 +37,7 @@ describe("reader content safety", () => {
   });
 
   afterEach(() => {
+    vi.clearAllMocks();
     vi.clearAllTimers();
     vi.useRealTimers();
     document.body.replaceChildren();
@@ -122,10 +126,81 @@ describe("reader content safety", () => {
     }
   });
 
-  it("preserves AI paragraphs and skips blank lines", () => {
-    reader.render(state({ activeIndex: 1, aiSummary: { text: "First & second\n\n <b>Literal</b> ", loading: false, error: null } }));
+  it("renders Markdown paragraphs while preserving raw HTML as literal text", () => {
+    reader.render(state({ activeIndex: 1, aiSummary: { text: "First & second\n\n<b>Literal</b>", loading: false, error: null } }));
 
-    expect([...container.querySelectorAll(".ai-content p")].map((p) => p.textContent)).toEqual(["First & second", " <b>Literal</b> "]);
+    expect([...container.querySelectorAll(".ai-content p")].map((p) => p.textContent)).toEqual(["First & second", "<b>Literal</b>"]);
+    expect(container.querySelector(".ai-content b")).toBeNull();
+  });
+
+  it("renders Overview Markdown headings, emphasis, lists, tables, and fenced code", () => {
+    const text = [
+      "# Overview", "", "A **bold** and *emphasized* summary with ~~old~~ text.", "",
+      "- First item", "- Second item", "", "1. Ordered item", "", "> Quoted text", "",
+      "| Name | Value |", "| --- | --- |", "| Answer | 42 |", "",
+      "```js", 'const element = "<script>literal</script>";', "```",
+    ].join("\n");
+
+    reader.render(state({ activeIndex: 1, aiSummary: { text, loading: false, error: null } }));
+
+    const content = container.querySelector(".ai-content");
+    expect(content.querySelector("h1")?.textContent).toBe("Overview");
+    expect(content.querySelector("strong")?.textContent).toBe("bold");
+    expect(content.querySelector("em")?.textContent).toBe("emphasized");
+    expect(content.querySelector("del")?.textContent).toBe("old");
+    expect([...content.querySelectorAll("ul li")].map((item) => item.textContent)).toEqual(["First item", "Second item"]);
+    expect(content.querySelector("ol li")?.textContent).toBe("Ordered item");
+    expect(content.querySelector("blockquote")?.textContent.trim()).toBe("Quoted text");
+    expect([...content.querySelectorAll("th")].map((cell) => cell.textContent)).toEqual(["Name", "Value"]);
+    expect([...content.querySelectorAll("td")].map((cell) => cell.textContent)).toEqual(["Answer", "42"]);
+    expect(content.querySelector("pre code")?.textContent).toBe('const element = "<script>literal</script>";\n');
+    expect(content.querySelector("script")).toBeNull();
+  });
+
+  it.each(["https://example.com/source", "http://example.com/source"])("opens %s externally only after a click and prevents app navigation", (url) => {
+    reader.render(state({ activeIndex: 1, aiSummary: { text: `[**Source**](${url})`, loading: false, error: null } }));
+    const link = container.querySelector(".ai-content a");
+    expect(link?.getAttribute("href")).toBe(url);
+    expect(shellOpen).not.toHaveBeenCalled();
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true });
+
+    link.querySelector("strong").dispatchEvent(click);
+
+    expect(click.defaultPrevented).toBe(true);
+    expect(shellOpen).toHaveBeenCalledExactlyOnceWith(url);
+  });
+
+  it.each([
+    "javascript:alert%281%29", "jav&#x61;script:alert%281%29", "java&#10;script:alert%281%29",
+    "data:text/html,unsafe", "file:///etc/passwd", "tauri://localhost/", "mailto:user@example.com",
+    "//example.com/source", "/relative/path", "#section",
+  ])("disables Overview links with unsafe or non-HTTP URL %s", (url) => {
+    reader.render(state({ activeIndex: 1, aiSummary: { text: `[Source](${url})`, loading: false, error: null } }));
+    const link = container.querySelector(".ai-content a");
+
+    expect(link).not.toBeNull();
+    expect(link.hasAttribute("href")).toBe(false);
+    link.click();
+    expect(shellOpen).not.toHaveBeenCalled();
+  });
+
+  it("keeps embedded HTML inert and literal inside Overview", () => {
+    const html = '<script>window.readerExecuted=true</script>\n<style>body {display:none}</style>\n<form><input autofocus><button>Submit</button></form>';
+
+    reader.render(state({ activeIndex: 1, aiSummary: { text: html, loading: false, error: null } }));
+
+    const content = container.querySelector(".ai-content");
+    expect(content.textContent).toContain(html);
+    expect(content.querySelector("script, style, form, input, button, [onerror], [style]")).toBeNull();
+    expect(window.readerExecuted).toBeUndefined();
+  });
+
+  it("shows no Overview tab or keyboard hint when Overview is disabled", () => {
+    reader.render(state());
+
+    expect(container.querySelector(".tab-hint, .ai-tab")).toBeNull();
+    expect(container.querySelector(".hints-bar").textContent).not.toContain("AI");
+    expect(container.querySelectorAll(".tab")).toHaveLength(1);
   });
 
   it.each([

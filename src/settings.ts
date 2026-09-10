@@ -5,6 +5,7 @@ interface AppConfig {
   shortcut: string;
   results_count: number;
   brave_api_key: string;
+  brave_answers_api_key: string;
   click_outside_dismisses: boolean;
   scroll_speed: number;
   theme: string;
@@ -62,7 +63,13 @@ export function createSettings(
 
       <div class="settings-group">
         <label class="settings-label">Brave Search API Key</label>
-        <input class="settings-input mono" data-field="brave_api_key" type="password" value="${config.brave_api_key}" />
+        <input class="settings-input mono" data-field="brave_api_key" type="password" />
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Brave Answers API Key (optional)</label>
+        <input class="settings-input mono" data-field="brave_answers_api_key" type="password" />
+        <span class="settings-hint">AI Overview requires a separate Brave Answers plan and API key.</span>
       </div>
 
       <div class="settings-group">
@@ -127,6 +134,9 @@ export function createSettings(
       </div>
     `;
 
+    body.querySelector<HTMLInputElement>('[data-field="brave_api_key"]')!.value = config.brave_api_key;
+    body.querySelector<HTMLInputElement>('[data-field="brave_answers_api_key"]')!.value = config.brave_answers_api_key ?? "";
+
     const saveBtn = body.querySelector(".settings-save") as HTMLButtonElement;
     const status = body.querySelector(".settings-status") as HTMLElement;
 
@@ -174,6 +184,7 @@ export function createSettings(
       const updated: AppConfig = {
         shortcut: get("shortcut"),
         brave_api_key: get("brave_api_key"),
+        brave_answers_api_key: get("brave_answers_api_key"),
         results_count: Math.min(10, Math.max(1, parseInt(get("results_count")) || 4)),
         scroll_speed: Math.min(10, Math.max(1, parseInt(get("scroll_speed")) || 3)),
         click_outside_dismisses: config.click_outside_dismisses,

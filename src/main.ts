@@ -28,6 +28,7 @@ interface AppConfig {
   shortcut: string;
   results_count: number;
   brave_api_key: string;
+  brave_answers_api_key: string;
   click_outside_dismisses: boolean;
   scroll_speed: number;
   theme: string;
@@ -54,6 +55,7 @@ let cleanupSettings: (() => void) | null = null;
 let scrollSpeed = 3;
 let defaultViewMode: string = "text";
 let shortcuts: Record<string, string> = {};
+let answersEnabled = false;
 let searchGeneration = 0; // bumped on each search to invalidate stale fetches
 let isSearching = false; // guard against concurrent searches
 
@@ -63,6 +65,7 @@ async function init() {
   scrollSpeed = config.scroll_speed;
   defaultViewMode = config.default_view;
   shortcuts = config.shortcuts || {};
+  answersEnabled = Boolean(config.brave_answers_api_key?.trim());
   applyTheme(config.theme);
 
   if (!config.brave_api_key) {
@@ -224,6 +227,8 @@ async function handleSearch(query: string) {
     aiSummary: null,
   };
 
+  if (answersEnabled) void requestAiSummary(query, thisGeneration);
+
   let results: SearchResult[];
   try {
     results = await invoke<SearchResult[]>("search_query", { query });
@@ -299,30 +304,30 @@ async function handleSearch(query: string) {
   await Promise.all(fetchPromises);
 }
 
-async function handleAiSummary() {
-  const aiTabIndex = readerState.pages.length;
-  if (!currentQuery || (readerState.aiSummary && !readerState.aiSummary.error)) {
-    // Already loading or finished, just switch to tab
-    readerState.activeIndex = aiTabIndex;
-    reader?.render(readerState);
-    return;
-  }
-
-  const thisGeneration = searchGeneration;
+async function requestAiSummary(query: string, thisGeneration: number) {
   readerState.aiSummary = { text: null, loading: true, error: null };
-  readerState.activeIndex = aiTabIndex;
-  reader?.render(readerState);
+  if (currentState === "reader") reader?.render(readerState);
 
   try {
-    const text = await invoke<string>("get_ai_summary", { query: currentQuery });
+    const text = await invoke<string>("get_ai_summary", { query });
     if (thisGeneration !== searchGeneration) return;
 
     readerState.aiSummary = { text, loading: false, error: null };
-    reader?.render(readerState);
   } catch (err) {
     if (thisGeneration !== searchGeneration) return;
     readerState.aiSummary = { text: null, loading: false, error: String(err) };
-    reader?.render(readerState);
+  }
+  if (currentState === "reader") reader?.render(readerState);
+}
+
+function handleAiSummary() {
+  if (!answersEnabled || !currentQuery || !readerState.aiSummary || !reader) return;
+
+  readerState.activeIndex = readerState.pages.length;
+  if (readerState.aiSummary.error) {
+    void requestAiSummary(currentQuery, searchGeneration);
+  } else {
+    reader.render(readerState);
   }
 }
 
@@ -372,7 +377,7 @@ function setupReaderKeybindings() {
         if (index >= 0 && index < readerState.pages.length) {
           readerState.activeIndex = index;
           reader?.render(readerState);
-        } else if (index === readerState.pages.length) {
+        } else if (index === readerState.pages.length && answersEnabled && readerState.aiSummary) {
           handleAiSummary();
         }
       },
@@ -389,10 +394,11 @@ async function showSettings() {
   await appWindow.center();
 
   const settings = createSettings(appEl, async () => {
-    const config = await invoke<Pick<AppConfig, "scroll_speed" | "theme" | "default_view" | "shortcuts">>("get_config");
+    const config = await invoke<Pick<AppConfig, "scroll_speed" | "theme" | "default_view" | "shortcuts" | "brave_answers_api_key">>("get_config");
     scrollSpeed = config.scroll_speed;
     defaultViewMode = config.default_view;
     shortcuts = config.shortcuts || {};
+    answersEnabled = Boolean(config.brave_answers_api_key?.trim());
     applyTheme(config.theme);
     showSearch();
   });
