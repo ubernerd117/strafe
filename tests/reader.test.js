@@ -184,6 +184,53 @@ describe("reader content safety", () => {
     expect(shellOpen).not.toHaveBeenCalled();
   });
 
+  it("shows an accessible inline hint when an Overview link cannot open", async () => {
+    shellOpen.mockRejectedValueOnce(new Error("vendor failure: secret-token"));
+    reader.render(state({ activeIndex: 1, aiSummary: { text: '[Source](https://example.com/source "Source title")', loading: false, error: null } }));
+    const link = container.querySelector(".ai-content a");
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true });
+
+    link.dispatchEvent(click);
+    await Promise.resolve();
+
+    const status = container.querySelector('.ai-content [role="status"]');
+    expect(status?.textContent).toContain("Unable to open link in browser.");
+    expect(status.hidden).toBe(false);
+    expect(container.textContent).not.toContain("secret-token");
+    expect(link.title).toBe("Source title");
+    expect(click.defaultPrevented).toBe(true);
+  });
+
+  it("keeps a single inline hint after repeated Overview link failures", async () => {
+    shellOpen.mockRejectedValueOnce(new Error("cannot open"));
+    reader.render(state({ activeIndex: 1, aiSummary: { text: "[Source](https://example.com/source)", loading: false, error: null } }));
+    const link = container.querySelector(".ai-content a");
+    link.click();
+    await Promise.resolve();
+    shellOpen.mockRejectedValueOnce(new Error("cannot open"));
+
+    link.click();
+    await Promise.resolve();
+
+    expect(container.querySelectorAll('.ai-content [role="status"]')).toHaveLength(1);
+    expect(container.querySelector('.ai-content [role="status"]')?.textContent.match(/Unable to open/g)).toHaveLength(1);
+  });
+
+  it("clears the inline hint after successfully retrying an Overview link", async () => {
+    shellOpen.mockRejectedValueOnce(new Error("cannot open"));
+    reader.render(state({ activeIndex: 1, aiSummary: { text: "[Source](https://example.com/source)", loading: false, error: null } }));
+    const link = container.querySelector(".ai-content a");
+    link.click();
+    await Promise.resolve();
+    expect(container.querySelector('.ai-content [role="status"]')?.textContent).toContain("Unable to open");
+
+    link.click();
+    await Promise.resolve();
+
+    expect(container.textContent).not.toContain("Unable to open");
+    expect(link.title).not.toContain("Unable to open");
+  });
+
   it("keeps embedded HTML inert and literal inside Overview", () => {
     const html = '<script>window.readerExecuted=true</script>\n<style>body {display:none}</style>\n<form><input autofocus><button>Submit</button></form>';
 

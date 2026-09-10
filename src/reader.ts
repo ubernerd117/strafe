@@ -28,13 +28,18 @@ function renderOverviewMarkdown(text: string): DocumentFragment {
     RETURN_DOM_FRAGMENT: true,
   });
   content.querySelectorAll("a").forEach((link) => {
+    const status = document.createElement("span");
+    status.className = "overview-link-status";
+    status.setAttribute("role", "status");
+    link.after(status);
     link.addEventListener("click", (event) => {
       event.preventDefault();
       const href = link.getAttribute("href");
       if (href) {
-        void shellOpen(href).catch(() => {
-          link.title = "Unable to open link in browser.";
-        });
+        void shellOpen(href).then(
+          () => { status.textContent = ""; },
+          () => { status.textContent = " Unable to open link in browser. Try again."; },
+        );
       }
     });
     link.addEventListener("auxclick", (event) => event.preventDefault());
