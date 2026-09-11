@@ -9,6 +9,8 @@ pub struct AppConfig {
     pub shortcut: String,
     pub results_count: u8,
     pub brave_api_key: String,
+    #[serde(default)]
+    pub brave_answers_api_key: String,
     pub click_outside_dismisses: bool,
     pub scroll_speed: u8,
     pub theme: String,
@@ -21,11 +23,12 @@ impl Default for AppConfig {
     fn default() -> Self {
         let mut shortcuts = HashMap::new();
         shortcuts.insert("sxm".to_string(), "https://www.siriusxm.com/".to_string());
-        
+
         Self {
             shortcut: "Option+Space".to_string(),
             results_count: 4,
             brave_api_key: String::new(),
+            brave_answers_api_key: String::new(),
             click_outside_dismisses: true,
             scroll_speed: 3,
             theme: "auto".to_string(),
@@ -70,6 +73,19 @@ mod tests {
     use std::collections::HashMap;
 
     #[test]
+    fn config_round_trips_independent_search_and_answers_keys() {
+        for answers_key in ["answers-secret", ""] {
+            let mut saved = serde_json::to_value(AppConfig::default()).unwrap();
+            saved["brave_api_key"] = serde_json::json!("search-secret");
+            saved["brave_answers_api_key"] = serde_json::json!(answers_key);
+            let config: AppConfig = serde_json::from_value(saved).unwrap();
+            let restored = serde_json::to_value(config).unwrap();
+            assert_eq!(restored["brave_api_key"], "search-secret");
+            assert_eq!(restored["brave_answers_api_key"], answers_key);
+        }
+    }
+
+    #[test]
     fn previous_config_without_shortcuts_round_trips_saved_values() {
         let json = r#"{
             "shortcut": "Command+Shift+K",
@@ -90,6 +106,10 @@ mod tests {
         assert_eq!(config.shortcut, "Command+Shift+K");
         assert_eq!(config.results_count, 9);
         assert_eq!(config.brave_api_key, "saved-key");
+        assert_eq!(
+            serde_json::to_value(&config).unwrap()["brave_answers_api_key"],
+            ""
+        );
         assert!(!config.click_outside_dismisses);
         assert_eq!(config.scroll_speed, 7);
         assert_eq!(config.theme, "light");

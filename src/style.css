@@ -584,6 +584,11 @@ button:disabled {
   font: 400 var(--type-body)/1.75 var(--font-body);
 }
 
+.overview-link-status {
+  color: var(--error);
+  font: 400 var(--type-caption)/1.5 var(--font-ui);
+}
+
 /* Loading, errors and keyboard fallback states. */
 .loading-container {
   display: flex;

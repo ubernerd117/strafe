@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::time::Duration;
+
+pub(crate) const BRAVE_BASE_URL: &str = "https://api.search.brave.com/res/v1";
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 const SEARCH_TIMEOUT: Duration = Duration::from_secs(20);
@@ -41,19 +42,6 @@ impl From<BraveResult> for SearchResult {
 }
 
 #[derive(Deserialize)]
-struct BraveSummaryResponse {
-    summarizer: Option<BraveSummarizer>,
-}
-
-#[derive(Deserialize, Serialize, Clone)]
-pub struct BraveSummarizer {
-    pub key: String,
-    #[serde(rename = "type")]
-    pub type_: String,
-    pub title: Option<String>,
-}
-
-#[derive(Deserialize)]
 struct BraveAnswersResponse {
     choices: Vec<BraveAnswerChoice>,
 }
@@ -66,6 +54,16 @@ struct BraveAnswerChoice {
 #[derive(Deserialize)]
 struct BraveAnswerMessage {
     content: String,
+}
+
+#[derive(Deserialize)]
+struct BraveErrorResponse {
+    error: BraveError,
+}
+
+#[derive(Deserialize)]
+struct BraveError {
+    code: String,
 }
 
 async fn with_deadline<T>(
@@ -98,70 +96,29 @@ fn brave_client() -> Result<reqwest::Client, String> {
         .map_err(|error| format!("Failed to initialize Brave client: {error}"))
 }
 
-fn build_unavailable_error() -> String {
-    "AI Overview is unavailable for this Brave API key. Legacy Summarizer access requires the discontinued Pro AI plan, and the fallback Answers endpoint requires an Answers plan.".to_string()
-}
-
-fn collect_strings(value: &Value, out: &mut Vec<String>) {
-    match value {
-        Value::String(text) => {
-            let trimmed = text.trim();
-            if !trimmed.is_empty() {
-                out.push(trimmed.to_string());
-            }
-        }
-        Value::Array(items) => {
-            for item in items {
-                collect_strings(item, out);
-            }
-        }
-        Value::Object(map) => {
-            for key in ["text", "answer", "raw_text", "content", "text_markdown"] {
-                if let Some(value) = map.get(key) {
-                    collect_strings(value, out);
-                }
-            }
-        }
-        _ => {}
+fn answers_status_error(status: reqwest::StatusCode, error_code: Option<&str>) -> String {
+    let code = status.as_u16();
+    // Brave can report token and subscription errors with HTTP 422 or 400.
+    // Map documented codes to our own copy; vendor details may contain secrets.
+    match error_code {
+        Some("SUBSCRIPTION_TOKEN_INVALID") => format!("Brave Answers authentication failed (HTTP {code}). Check the Brave Answers API key in Settings."),
+        Some("SUBSCRIPTION_NOT_FOUND" | "RESOURCE_NOT_ALLOWED" | "OPTION_NOT_IN_PLAN") => format!("Brave Answers access denied (HTTP {code}). Check that your Answers key has an active Answers plan."),
+        Some("CREDIT_EXHAUSTED") => format!("Brave Answers credits exhausted (HTTP {code}). Check your Answers plan and billing."),
+        Some("QUOTA_LIMITED" | "USAGE_LIMIT_EXCEEDED") => format!("Brave Answers quota exceeded (HTTP {code}). Check your Answers plan usage limits."),
+        Some("RATE_LIMITED") => format!("Brave Answers rate limit reached (HTTP {code}). Please try again later."),
+        _ => match code {
+            401 => "Brave Answers authentication failed (HTTP 401). Check the Brave Answers API key in Settings.".to_string(),
+            402 | 403 => format!("Brave Answers access denied (HTTP {code}). Check that your Answers key has an active Answers plan."),
+            429 => "Brave Answers rate limit reached (HTTP 429). Please try again later.".to_string(),
+            _ => format!("Brave Answers request failed (HTTP {code}). Please try again later."),
+        },
     }
 }
 
-fn extract_summary_text(payload: &Value) -> Option<String> {
-    let status = payload.get("status").and_then(Value::as_str);
-    if matches!(status, Some("failed")) {
-        return None;
-    }
-
-    let mut parts = Vec::new();
-
-    if let Some(summary) = payload.get("summary") {
-        collect_strings(summary, &mut parts);
-    }
-
-    if parts.is_empty() {
-        if let Some(enrichments) = payload.get("enrichments") {
-            collect_strings(enrichments, &mut parts);
-        }
-    }
-
-    if parts.is_empty() {
-        return None;
-    }
-
-    let mut deduped = Vec::new();
-    for part in parts {
-        if deduped.last() != Some(&part) {
-            deduped.push(part);
-        }
-    }
-
-    Some(deduped.join("\n\n"))
-}
-
-async fn fetch_brave_answer(api_key: &str, query: &str) -> Result<String, String> {
+async fn fetch_brave_answer(base_url: &str, api_key: &str, query: &str) -> Result<String, String> {
     let client = brave_client()?;
     let resp = client
-        .post("https://api.search.brave.com/res/v1/chat/completions")
+        .post(format!("{base_url}/chat/completions"))
         .header("X-Subscription-Token", api_key)
         .header("Accept", "application/json")
         .header("Content-Type", "application/json")
@@ -182,7 +139,11 @@ async fn fetch_brave_answer(api_key: &str, query: &str) -> Result<String, String
 
     let status = resp.status();
     if !status.is_success() {
-        return Err(build_unavailable_error());
+        let error = resp.json::<BraveErrorResponse>().await.ok();
+        return Err(answers_status_error(
+            status,
+            error.as_ref().map(|response| response.error.code.as_str()),
+        ));
     }
 
     let answers: BraveAnswersResponse = resp
@@ -202,6 +163,7 @@ async fn fetch_brave_answer(api_key: &str, query: &str) -> Result<String, String
 }
 
 pub async fn search_brave(
+    base_url: &str,
     api_key: &str,
     query: &str,
     results_count: u8,
@@ -209,19 +171,20 @@ pub async fn search_brave(
     with_deadline(
         "Search",
         SEARCH_TIMEOUT,
-        search_brave_inner(api_key, query, results_count),
+        search_brave_inner(base_url, api_key, query, results_count),
     )
     .await
 }
 
 async fn search_brave_inner(
+    base_url: &str,
     api_key: &str,
     query: &str,
     results_count: u8,
 ) -> Result<Vec<SearchResult>, String> {
     let client = brave_client()?;
     let resp = client
-        .get("https://api.search.brave.com/res/v1/web/search")
+        .get(format!("{base_url}/web/search"))
         .header("X-Subscription-Token", api_key)
         .header("Accept", "application/json")
         .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -250,68 +213,21 @@ async fn search_brave_inner(
     Ok(results)
 }
 
-pub async fn fetch_brave_summary(api_key: &str, query: &str) -> Result<String, String> {
+pub async fn fetch_brave_summary(
+    base_url: &str,
+    answers_api_key: &str,
+    query: &str,
+) -> Result<String, String> {
+    let answers_api_key = answers_api_key.trim();
+    if answers_api_key.is_empty() {
+        return Err("AI Overview requires a Brave Answers API key. Add it in Settings; Answers requires its own plan and key.".to_string());
+    }
     with_deadline(
         "AI overview",
         AI_TIMEOUT,
-        fetch_brave_summary_inner(api_key, query),
+        fetch_brave_answer(base_url, answers_api_key, query),
     )
     .await
-}
-
-async fn fetch_brave_summary_inner(api_key: &str, query: &str) -> Result<String, String> {
-    let client = brave_client()?;
-
-    // 1. Initial search with summary=1 to get the summary key
-    let resp = client
-        .get("https://api.search.brave.com/res/v1/web/search")
-        .header("X-Subscription-Token", api_key)
-        .header("Accept", "application/json")
-        .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-        .query(&[("q", query), ("summary", "1"), ("count", "5")])
-        .send()
-        .await
-        .map_err(|e| request_error("AI overview", "Summary request failed", e))?;
-
-    let resp = resp
-        .error_for_status()
-        .map_err(|e| request_error("AI overview", "Summary request failed", e))?;
-
-    let brave_resp: BraveSummaryResponse = resp
-        .json()
-        .await
-        .map_err(|e| request_error("AI overview", "Failed to parse summary response", e))?;
-
-    let Some(summary_obj) = brave_resp.summarizer else {
-        return fetch_brave_answer(api_key, query).await;
-    };
-
-    // 2. Fetch the actual summary text using the key
-    // Note: Sometimes the summary is already in the first response, but for complex ones we need to poll/fetch
-    let resp = client
-        .get("https://api.search.brave.com/res/v1/summarizer/search")
-        .header("X-Subscription-Token", api_key)
-        .header("Accept", "application/json")
-        .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-        .query(&[("key", &summary_obj.key)])
-        .send()
-        .await
-        .map_err(|e| request_error("AI overview", "Failed to fetch summary", e))?;
-
-    let resp = resp
-        .error_for_status()
-        .map_err(|e| request_error("AI overview", "Summary generation failed", e))?;
-
-    let summary_detail: Value = resp
-        .json()
-        .await
-        .map_err(|e| request_error("AI overview", "Failed to parse summary detail", e))?;
-
-    let full_summary = extract_summary_text(&summary_detail)
-        .or_else(|| summary_obj.title.clone())
-        .ok_or_else(|| "The AI overview response did not contain summary text.".to_string())?;
-
-    Ok(full_summary)
 }
 
 #[cfg(test)]
