@@ -29,3 +29,6 @@ src-tauri/target/
 # Superpowers
 .superpowers/
 .env
+
+# Keep the original recording local; publish the optimized MP4.
+/landing/assets/strafe-demo.mov

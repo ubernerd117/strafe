@@ -41,6 +41,21 @@ The interactive reader uses three original sample articles. The fixed sample sea
 
 Both the app and this page load bundled Google Fonts from `fonts/`: Syne for editorial labels, DM Sans for headings and body text, IBM Plex Mono for key hints, and Literata for the reader. The font files work offline; their OFL licenses sit alongside them. `fonts.css` defines the shared faces. The arrow geometry matches `../branding/mark.svg`, and `app-icon.svg` provides the favicon.
 
+## Demo video
+
+`assets/strafe-demo.mp4` is the 37-second recording shown below the hero. The player uses native controls, plays inline on mobile, and waits for playback before loading the video. `assets/strafe-demo-poster.jpg` supplies its preview and the root README's clickable thumbnail.
+
+Commit the MP4 and poster with the page changes, then push the feature branch and open a PR. They deploy with the static site after merge. The original `assets/strafe-demo.mov` stays local and is gitignored.
+
+To regenerate the published assets with FFmpeg from the repository root:
+
+```sh
+ffmpeg -i landing/assets/strafe-demo.mov -vf 'scale=1920:-2,fps=30' -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p -movflags +faststart -an landing/assets/strafe-demo.mp4
+ffmpeg -ss 22 -i landing/assets/strafe-demo.mov -frames:v 1 -vf 'scale=1440:-2' -q:v 3 landing/assets/strafe-demo-poster.jpg
+```
+
+The README thumbnail opens the website's video section. For an inline GitHub player instead, drag the MP4 into a GitHub Markdown editor and use the generated attachment URL in the README. That attachment upload is separate from committing the file. See [GitHub's attachment documentation](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files).
+
 ## Typography
 
 One scale defines text sizes and line heights in `style.css`; mobile layouts wrap rather than shrink captions and controls.
