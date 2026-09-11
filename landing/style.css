@@ -63,6 +63,10 @@ kbd{display:inline-flex;align-items:center;justify-content:center;min-width:23px
 #article-copy{color:#b4bfaa}
 #article-copy p{margin:0 0 16px}
 #article-copy h4{color:#e0e6d6;margin:24px 0 10px}
+.app-window #article.screenshot-preview{height:auto;max-height:600px;padding:0;background:#101311}
+.screenshot-preview img{display:block;width:100%;height:auto}
+.preview-details{padding:16px 20px;border-top:1px solid var(--line);color:var(--muted)}
+.preview-details p{margin:0;line-height:1.6}
 .reader-footer{display:flex;align-items:center;gap:17px;border-top:1px solid #30372e;padding:11px 16px;color:#a4af9c;}
 .reader-footer kbd{height:17px;min-width:17px;padding:0 3px}
 .reader-mode{margin-left:auto;}

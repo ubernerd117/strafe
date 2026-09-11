@@ -6,9 +6,9 @@
   const query = document.querySelector('#query');
   const tabs = [...document.querySelectorAll('[data-page]')];
   const pages = [
-    { title: 'Reading on<br>a screen.', paragraphs: ['You opened an essay someone sent you, or searched for a reference you need for your work. You want to read it and get back to what you were doing.', 'Give that page your attention. Read at your own pace, follow a thought, and leave when you have what you need.'], heading: 'Start with the words', closing: 'On a quiet page, you can spend your time with the writing. Choose a comfortable line length and leave enough room between paragraphs.' },
-    { title: 'Checking<br>a source.', paragraphs: ['Before you search, write down what you want to know. A specific question gives you a place to start and a reason to stop.', 'Read a few sources. Compare their examples and check the details that matter to your work. Keep a note of the parts you want to revisit.'], heading: 'Follow the reference', closing: 'An author may point you to an earlier essay or a study. Open that source if you need the context. You can return to your question after you read it.' },
-    { title: 'Taking<br>reading notes.', paragraphs: ['You can close the page after you find your answer. Take a moment to write what you learned in your own words.', 'A sentence in your notebook may be enough. You can use it as a starting point when you return to your work.'], heading: 'Return to your work', closing: 'Try the idea in the thing you were making. You may find another question worth searching for, or you may have enough to keep going.' }
+    { image: 'assets/search-result-1.png', alt: 'Neo-tree search result in Strafe reader view, showing a GitHub discussion about navigating to a parent directory.', caption: 'Read the GitHub discussion with the page stripped down to text and images.' },
+    { image: 'assets/search-result-1-raw-mode.png', alt: 'The same Neo-tree GitHub discussion in Strafe raw view, with the original page layout and comments.', caption: 'Switch to raw view to see the source page’s layout and comments.' },
+    { image: 'assets/ai-overview.png', alt: 'Brave AI overview in Strafe explaining Neo-tree parent-directory navigation with Backspace and the navigate_up command.', caption: 'Read a Brave AI overview alongside the search results. Captured from the app; this preview does not generate answers.' }
   ];
   let current = 0;
   function showPage(index, announce = true) {
@@ -16,20 +16,15 @@
     reader.hidden = false;
     empty.hidden = true;
     const page = pages[current];
-    document.querySelector('#article-title').innerHTML = page.title;
-    const copy = document.querySelector('#article-copy');
-    copy.replaceChildren();
-    for (const paragraph of page.paragraphs) {
-      const p = document.createElement('p'); p.textContent = paragraph; copy.append(p);
-    }
-    const heading = document.createElement('h4'); heading.textContent = page.heading;
-    const closing = document.createElement('p'); closing.textContent = page.closing;
-    copy.append(heading, closing);
-    document.querySelector('#page-number').textContent = `0${current + 1} / 03`;
+    const image = document.querySelector('#preview-image');
+    image.src = page.image;
+    image.alt = page.alt;
+    document.querySelector('#preview-caption').textContent = page.caption;
+    document.querySelector('#preview-full-size').href = page.image;
     article.setAttribute('aria-labelledby', `tab-${current}`);
     article.scrollTop = 0;
     tabs.forEach((tab, index) => { tab.setAttribute('aria-selected', String(index === current)); tab.tabIndex = index === current ? 0 : -1; });
-    if (announce) document.querySelector('#announcement').textContent = `Sample article ${current + 1} of 3: ${tabs[current].textContent.trim()}`;
+    if (announce) document.querySelector('#announcement').textContent = `Captured view ${current + 1} of 3: ${tabs[current].textContent.trim()}`;
   }
   function dismiss() { reader.hidden = true; empty.hidden = false; query.focus(); }
   tabs.forEach((tab, index) => {
