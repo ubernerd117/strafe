@@ -31,6 +31,11 @@ kbd{display:inline-flex;align-items:center;justify-content:center;min-width:23px
 .hero-meta span:last-child{display:flex;gap:16px}
 .section-caption{display:flex;justify-content:space-between;gap:20px;padding:20px 0;border-top:1px solid var(--line);color:var(--muted);}
 .section-caption h2{color:var(--ink);margin:0}
+.video-section{margin-bottom:48px}
+.demo-video{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:5px;background:var(--surface)}
+.demo-video:focus-visible{outline:2px solid var(--mint);outline-offset:5px}
+.video-caption{color:var(--muted);line-height:1.6}
+.video-caption a{color:var(--ink);margin-left:8px}
 
 .demo-stage{position:relative;overflow:hidden;background:#202a20;padding:30px 85px 24px;border:1px solid #3b4737;border-radius:5px}
 .stage-grid{position:absolute;inset:0;background-image:linear-gradient(#71806b14 1px,transparent 1px),linear-gradient(90deg,#71806b14 1px,transparent 1px);background-size:40px 40px;mask-image:linear-gradient(90deg,#000,transparent 45%,#000);pointer-events:none}
@@ -58,6 +63,10 @@ kbd{display:inline-flex;align-items:center;justify-content:center;min-width:23px
 #article-copy{color:#b4bfaa}
 #article-copy p{margin:0 0 16px}
 #article-copy h4{color:#e0e6d6;margin:24px 0 10px}
+.app-window #article.screenshot-preview{height:auto;max-height:600px;padding:0;background:#101311}
+.screenshot-preview img{display:block;width:100%;height:auto}
+.preview-details{padding:16px 20px;border-top:1px solid var(--line);color:var(--muted)}
+.preview-details p{margin:0;line-height:1.6}
 .reader-footer{display:flex;align-items:center;gap:17px;border-top:1px solid #30372e;padding:11px 16px;color:#a4af9c;}
 .reader-footer kbd{height:17px;min-width:17px;padding:0 3px}
 .reader-mode{margin-left:auto;}
@@ -263,3 +272,10 @@ kbd,.reader-footer kbd,.big-keys kbd span,.big-keys .space-key {
 /* The shared vector replaces the platform-dependent arrow glyph. */
 .mark { display:inline-flex; align-items:center; }
 .mark svg { width:32px; height:32px; }
+
+/* Screenshot gallery: ordinary tabs, without simulated app controls. */
+.screenshot-gallery{padding:30px}
+#preview-image{display:block;width:100%;height:auto}
+.screenshot-gallery .article-tabs{padding:0}
+.screenshot-gallery .article-tabs button{font-size:var(--type-ui);padding:14px 8px}
+@media(max-width:600px){.screenshot-gallery{padding:10px}.screenshot-gallery .article-tabs button{font-size:.75rem;padding:12px 5px}}

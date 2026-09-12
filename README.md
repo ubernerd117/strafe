@@ -19,6 +19,12 @@
 
 ---
 
+## Demo
+
+[![Watch the 37-second Strafe demo](landing/assets/strafe-reader-mode.png)](https://strafe.sourab.tech/assets/strafe-demo.mp4)
+
+[Watch on the website](https://strafe.sourab.tech/assets/strafe-demo.mp4) · [Open the video](landing/assets/strafe-demo.mp4)
+
 ## Download
 
 **[Download Strafe for macOS (Apple Silicon)](https://github.com/ubernerd117/strafe/releases/latest)**

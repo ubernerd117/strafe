@@ -24,8 +24,6 @@ Create a separate Vercel project named `strafe-website` from this GitHub reposit
 
 Vercel reads `landing/vercel.json` when `landing` is selected as the root. This site serves its HTML, CSS, JavaScript, and bundled fonts directly. It needs no environment variables, Brave API key, Rust, or Tauri build. Leave **Include source files outside of the Root Directory in the Build Step** disabled.
 
-The landing page and Vercel setup currently live on `codex/landing-vercel`. Merge that branch into `main` before deploying `main`, or explicitly select `codex/landing-vercel` as the Vercel project's production branch until it is merged. Importing `main` before the merge will not include this directory.
-
 After verifying the generated deployment URL:
 
 1. Open the new project's **Settings → Domains** and add `strafe.sourab.tech` to production.
@@ -37,9 +35,23 @@ The canonical URL, social metadata, robots file, and sitemap use `https://strafe
 
 See [Vercel build settings](https://vercel.com/docs/builds/configure-a-build) and [custom domain setup](https://vercel.com/docs/domains/working-with-domains/add-a-domain).
 
-The interactive reader uses three original sample articles. The fixed sample search does not call an API. Click the reader to use h/l, j/k, 1–3, slash, and Escape; use article tabs or arrow buttons on touch devices. Download links open the project's latest GitHub release.
+The screenshot gallery shows four captured app views: reader, reader with images, raw view, and Brave AI overview. Choose a tab or use the standard Left/Right/Home/End tab-navigation keys. The gallery has no search form, reset/dismiss controls, or app keyboard shortcuts. In Strafe itself, h/l changes results, i toggles images, and w toggles raw view. Each gallery view links to its full-size screenshot; AI Overview requires a separate Brave Answers API key. The reader screenshots show [Rocky Linux documentation](https://docs.rockylinux.org/books/nvchad/nvchad_ui/nvimtree/).
 
 Both the app and this page load bundled Google Fonts from `fonts/`: Syne for editorial labels, DM Sans for headings and body text, IBM Plex Mono for key hints, and Literata for the reader. The font files work offline; their OFL licenses sit alongside them. `fonts.css` defines the shared faces. The arrow geometry matches `../branding/mark.svg`, and `app-icon.svg` provides the favicon.
+
+## Demo video
+
+`assets/strafe-demo.mp4` is the 37-second recording shown below the hero. The player uses native controls, plays inline on mobile, and waits for playback before loading the video. `assets/strafe-reader-mode.png` supplies its preview and the root README's clickable thumbnail; the reader-with-images, raw-view, and AI-overview PNGs supply the other gallery tabs.
+
+Commit the MP4 and screenshots with the page changes, then push the feature branch and open a PR. They deploy with the static site after merge. The original `assets/strafe-demo.mov` stays local and is gitignored.
+
+To regenerate the published assets with FFmpeg from the repository root:
+
+```sh
+ffmpeg -i landing/assets/strafe-demo.mov -vf 'scale=1920:-2,fps=30' -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p -movflags +faststart -an landing/assets/strafe-demo.mp4
+```
+
+The README thumbnail opens the complete hosted video. For an inline GitHub player instead, drag the MP4 into a GitHub Markdown editor and use the generated attachment URL in the README. That attachment upload is separate from committing the file. See [GitHub's attachment documentation](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files).
 
 ## Typography
 
