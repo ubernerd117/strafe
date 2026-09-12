@@ -28,3 +28,28 @@ it('keeps page navigation and full-size screenshot links working', () => {
     }
   }
 });
+
+it('switches the four screenshot tabs without using app shortcuts', () => {
+  const overview = document.querySelector('#tab-3');
+  expect(overview).not.toBeNull();
+  new Function(readFileSync('landing/demo.js', 'utf8'))();
+  overview.click();
+  expect(document.querySelector('#preview-image').getAttribute('src')).toBe('assets/strafe-ai-overview.png');
+  expect(document.querySelector('#preview-full-size').getAttribute('href')).toBe('assets/strafe-ai-overview.png');
+  expect(overview.getAttribute('aria-selected')).toBe('true');
+});
+
+it('leaves h and l alone while standard arrow keys navigate gallery tabs', () => {
+  const first = document.querySelector('#tab-0');
+  expect(first).not.toBeNull();
+  new Function(readFileSync('landing/demo.js', 'utf8'))();
+  for (const key of ['h', 'l']) {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+    first.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(first.getAttribute('aria-selected')).toBe('true');
+  }
+  first.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+  expect(document.querySelector('#preview-image').getAttribute('src')).toBe('assets/strafe-reader-image-mode.png');
+  expect(document.activeElement.id).toBe('tab-1');
+});
