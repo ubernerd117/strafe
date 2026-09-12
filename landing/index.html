@@ -3,76 +3,89 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101311">
-  <meta name="description" content="Search the web and read clean articles from your keyboard. Strafe is an open-source reader for macOS.">
+  <meta name="theme-color" content="#111a14">
+  <meta name="description" content="Search the web from any app on your Mac. Read the results in a quiet, keyboard-first reader, then get back to your work.">
   <title>Strafe — search without interruption</title>
   <link rel="canonical" href="https://strafe.sourab.tech/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Strafe">
   <meta property="og:title" content="Strafe — search without interruption">
-  <meta property="og:description" content="Search the web and read clean articles from your keyboard. Strafe is an open-source reader for macOS.">
+  <meta property="og:description" content="A quieter way to search and read on your Mac.">
   <meta property="og:url" content="https://strafe.sourab.tech/">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="https://strafe.sourab.tech/assets/strafe-reader-mode.png">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Strafe — search without interruption">
-  <meta name="twitter:description" content="Search the web and read clean articles from your keyboard. Strafe is an open-source reader for macOS.">
-  <link rel="stylesheet" href="fonts.css">
+  <meta name="twitter:description" content="A quieter way to search and read on your Mac.">
+  <meta name="twitter:image" content="https://strafe.sourab.tech/assets/strafe-reader-mode.png">
   <link rel="icon" type="image/svg+xml" href="app-icon.svg">
-  <link rel="stylesheet" href="style.css?v=9">
-  <script src="demo.js?v=2" defer></script>
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="style.css?v=10">
+  <script src="motion.js?v=1" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="nav wrap">
-  <a class="brand" href="#" aria-label="Strafe home"><span class="mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 26 26 6M15 6h11v11"/></svg></span> strafe<span class="brand-dot">.</span></a>
-  <nav aria-label="Main navigation"><a href="#try">Try it</a><a href="#controls">The controls</a><a class="nav-source" href="https://github.com/ubernerd117/strafe">Source <span aria-hidden="true">↗</span></a></nav>
-</header>
-<main id="main">
-<section class="hero wrap">
-  <div class="eyebrow"><span class="status-dot"></span> A KEYBOARD-FIRST WEB READER <span class="edition">/ macOS</span></div>
-  <h1>Search without<br><span>interruption.</span></h1>
-  <div class="hero-bottom"><p>Search the web from any app on your Mac.<br class="desktop-break"> Press <kbd>⌥</kbd> <kbd>space</kbd>, search, and read the page.</p><a class="button" href="https://github.com/ubernerd117/strafe/releases/latest">Get Strafe for Mac <span aria-hidden="true">↗</span></a></div>
-  <div class="hero-meta"><span>OPEN SOURCE · MIT LICENSE</span><span>WATCH STRAFE IN ACTION <span aria-hidden="true">↓</span></span></div>
-</section>
-<section id="watch" class="video-section wrap" aria-labelledby="video-heading">
-  <div class="section-caption"><h2 id="video-heading">STRAFE IN ACTION</h2><span>37-second demo · macOS</span></div>
-  <video class="demo-video" controls playsinline preload="none" poster="assets/search-result-1.png" width="1920" height="1242" aria-label="Strafe demo: search and read results from any app on your Mac">
-    <source src="assets/strafe-demo.mp4" type="video/mp4">
-    <p>Your browser does not support embedded video. <a href="assets/strafe-demo.mp4">Download the Strafe demo</a>.</p>
-  </video>
-  <p class="video-caption">Search, read, and return to your work. <a class="underlined" href="assets/strafe-demo.mp4">Open the video ↗</a></p>
-</section>
-<section id="try" class="demo-section wrap" aria-labelledby="demo-heading">
-  <div class="section-caption"><h2 id="demo-heading">01 / EXPLORE THE APP</h2><span>Captured screens · one real search</span></div>
-  <div class="demo-stage">
-    <div class="stage-grid" aria-hidden="true"></div>
-    <div class="floating-label"><span class="status-dot"></span> TRY h / l TO CHANGE VIEWS</div>
-    <div class="app-window" id="demo" tabindex="0" aria-label="Interactive Strafe demo. Use h and l to change captured views, j and k to scroll, slash to search, Escape to dismiss.">
-      <div class="window-chrome"><span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span><span>strafe <span class="muted">/ reader</span></span><button id="reset" class="text-button">Reset ↺</button></div>
-      <form id="search-form"><label class="search-icon" for="query" aria-label="Example search">⌕</label><input id="query" value="neo-tree go up a directory" readonly aria-label="Example search: neo-tree go up a directory"><button class="search-submit" type="submit">Search <span aria-hidden="true">↵</span></button></form>
-      <div id="reader">
-        <div class="article-tabs" role="tablist" aria-label="Captured app views"><button id="tab-0" role="tab" aria-controls="article" aria-selected="true" data-page="0"><span>1</span> Reader view</button><button id="tab-1" role="tab" aria-controls="article" aria-selected="false" tabindex="-1" data-page="1"><span>2</span> Raw view</button><button id="tab-2" role="tab" aria-controls="article" aria-selected="false" tabindex="-1" data-page="2"><span>3</span> AI overview</button></div>
-        <div id="article" class="screenshot-preview" role="tabpanel" aria-labelledby="tab-0" tabindex="0">
-          <img id="preview-image" src="assets/search-result-1.png" alt="Neo-tree search result in Strafe reader view, showing a GitHub discussion about navigating to a parent directory." width="1556" height="1162" loading="lazy">
-        </div>
-        <div class="preview-details"><p id="preview-caption">Read the GitHub discussion with the page stripped down to text and images.</p><a id="preview-full-size" class="underlined" href="assets/search-result-1.png" target="_blank" rel="noopener">Open full-size screenshot ↗</a></div>
-        <div class="reader-footer"><span><kbd>h</kbd> <kbd>l</kbd> change view</span><span><kbd>j</kbd> <kbd>k</kbd> scroll</span><span><kbd>esc</kbd> close</span><span class="reader-mode"><span class="status-dot"></span> CAPTURED SCREEN</span></div>
+<svg class="svg-definitions" aria-hidden="true" width="0" height="0"><defs><symbol id="strafe-mark" viewBox="0 0 32 32"><path d="M6 26 26 6M15 6h11v11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol></defs></svg>
+<div class="opening" id="top">
+  <header class="nav wrap">
+    <a class="brand" href="#top" aria-label="Strafe home"><svg aria-hidden="true"><use href="#strafe-mark"/></svg>strafe<span>.</span></a>
+    <nav aria-label="Main navigation"><a href="#reader">The reader</a><a href="#controls">Shortcuts</a><a class="nav-download" href="https://github.com/ubernerd117/strafe/releases/latest">Get Strafe <span aria-hidden="true">↗</span></a></nav>
+  </header>
+</div>
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-heading">
+      <div class="hero-media" aria-hidden="true">
+        <img class="hero-still" src="assets/strafe-reader-mode.png" alt="" width="1594" height="1192" fetchpriority="high">
+        <video id="hero-video" muted loop playsinline preload="none" data-src="assets/strafe-hero.mp4" tabindex="-1"></video>
       </div>
-      <div id="empty-state" hidden><span class="empty-symbol" aria-hidden="true">⌕</span><p>Explore the captured search.</p><span>Press Enter or click Search to return to the first screenshot.</span></div>
+      <div class="hero-content wrap">
+        <div class="eyebrow"><span class="status-dot"></span> A QUIETER CORNER OF YOUR MAC</div>
+        <h1 id="hero-heading">Search without<br><span>interruption.</span></h1>
+        <p class="hero-description">Search the web from any app on your Mac.<br>Read the results, then get back to your work.</p>
+        <div class="hero-actions"><a class="button button-mint" href="https://github.com/ubernerd117/strafe/releases/latest">Download for Mac <span aria-hidden="true">↗</span></a><a class="watch-link" id="watch" href="assets/strafe-demo.mp4"><span class="play-icon" aria-hidden="true">▶</span> Watch the film <span class="duration">0:37</span></a></div>
+        <p class="hero-availability">macOS · Apple Silicon · Free &amp; open source</p>
+      </div>
+      <div class="hero-foot wrap"><a class="shortcut-intro" href="#reader"><span class="launch-keys"><kbd>⌥</kbd><kbd>space</kbd></span><span>A small window, from any app.</span><span class="down-arrow" aria-hidden="true">↓</span></a><button class="motion-toggle" id="motion-toggle" type="button" hidden>Play background</button></div>
+    </section>
+
+<section class="reader-section section-pad" id="reader" aria-labelledby="reader-heading">
+  <div class="wrap">
+    <div class="section-intro"><p class="eyebrow">01 / A LITTLE ROOM TO READ</p><h2 id="reader-heading">Follow your curiosity.<br><span class="serif">Keep your place.</span></h2><p>Open Strafe with <span class="inline-shortcut">Option + Space</span>.<br>Search the web and read the results, right where you are.</p></div>
+    <div class="feature-row">
+      <div class="feature-copy"><span class="feature-index">01.1</span><h3>Just you<br> and the words.</h3><p>Read documentation, essays, and articles in a clean text view. Move through your search results without a growing row of browser tabs.</p><p class="feature-note"><span class="note-line"></span> Text-first, by default.</p></div>
+      <figure class="product-figure"><a class="screenshot-link" href="assets/strafe-reader-mode.png" target="_blank" rel="noopener" aria-label="Enlarge the text reader screenshot"><img src="assets/strafe-reader-mode.png" alt="Rocky Linux's NvimTree documentation displayed in Strafe's text-only reader." width="1594" height="1192" loading="lazy" decoding="async"><span class="enlarge" aria-hidden="true">↗</span></a><figcaption><span>THE READER</span><span>Rocky Linux documentation</span></figcaption></figure>
     </div>
-    <div class="demo-bottom"><span>CLICK THE READER, THEN TRY THE KEYS</span><div class="demo-arrows"><button id="previous" aria-label="Previous captured view">←</button><button id="next" aria-label="Next captured view">→</button></div></div>
-    <span id="announcement" class="sr-only" aria-live="polite"></span>
+    <div class="feature-row feature-row-reverse">
+      <div class="feature-copy"><span class="feature-index">01.2</span><h3>A picture,<br> when you need it.</h3><p>Keep the diagrams and screenshots that help an explanation click. Press <kbd>i</kbd> in the app to bring images into the reader.</p><p class="feature-note"><span class="note-line"></span> The same page. A little more context.</p></div>
+      <figure class="product-figure"><a class="screenshot-link" href="assets/strafe-reader-image-mode.png" target="_blank" rel="noopener" aria-label="Enlarge the reader with images screenshot"><img src="assets/strafe-reader-image-mode.png" alt="The same Rocky Linux documentation in Strafe with the file-tree illustration visible." width="1608" height="1194" loading="lazy" decoding="async"><span class="enlarge" aria-hidden="true">↗</span></a><figcaption><span>READER + IMAGES</span><span><kbd>i</kbd> to toggle images</span></figcaption></figure>
+    </div>
+    <p class="source-credit">A real page, in both views. <a href="https://docs.rockylinux.org/books/nvchad/nvchad_ui/nvimtree/">Read the original on Rocky Linux <span aria-hidden="true">↗</span></a></p>
   </div>
 </section>
-<section class="story wrap">
-  <div class="section-caption"><h2>02 / SEARCH AND READ</h2><span>Search results in a text reader</span></div>
-  <div class="story-layout"><h3>Read results<br>with <em>your keyboard.</em></h3><div class="story-copy"><p>Press Option + Space from your Mac. Enter a query and read the results in a stripped-down reader.</p><p>Move to the next article with a keystroke. Open the original in your browser when you need it, or press Escape to return to your work.</p><a class="underlined" href="#controls">View keyboard shortcuts <span aria-hidden="true">↘</span></a></div></div>
+
+<section class="perspectives section-pad" aria-labelledby="perspectives-heading">
+  <div class="wrap">
+    <div class="section-heading-row"><div><p class="eyebrow">02 / A DIFFERENT PERSPECTIVE</p><h2 id="perspectives-heading">Take a closer look.</h2></div><p>Keep the source in reach.<br>Choose how you want to read it.</p></div>
+    <div class="perspective-grid">
+      <article class="perspective"><div class="perspective-copy"><span class="small-label">THE ORIGINAL LAYOUT</span><h3>See the page as a page.</h3><p>Press <kbd>w</kbd> for a static view of the original layout. When you need the full website, <kbd>o</kbd> opens it in your browser.</p></div><a class="screenshot-link" href="assets/strafe-raw-mode.png" target="_blank" rel="noopener" aria-label="Enlarge the raw page screenshot"><img src="assets/strafe-raw-mode.png" alt="Rocky Linux documentation in Strafe's raw view, retaining its blue header, page layout, and illustration." width="1602" height="1202" loading="lazy" decoding="async"><span class="enlarge" aria-hidden="true">↗</span></a></article>
+      <article class="perspective"><div class="perspective-copy"><span class="small-label">AN OPTIONAL OVERVIEW</span><h3>Start with the bigger picture.</h3><p>Read a Brave AI overview alongside the source results. Add a separate Brave Answers API key to enable it.</p></div><a class="screenshot-link" href="assets/strafe-ai-overview.png" target="_blank" rel="noopener" aria-label="Enlarge the AI overview screenshot"><img src="assets/strafe-ai-overview.png" alt="A captured Brave AI overview in Strafe about finding files in Neo-tree, alongside tabs for the source results." width="1602" height="1196" loading="lazy" decoding="async"><span class="enlarge" aria-hidden="true">↗</span></a></article>
+    </div>
+  </div>
 </section>
-<section id="controls" class="controls wrap" aria-labelledby="controls-heading">
-  <div class="section-caption"><h2 id="controls-heading">03 / KEYBOARD SHORTCUTS</h2><span>Reader controls</span></div>
-  <div class="keys-layout"><div class="key-feature"><div class="big-keys"><kbd>⌥<span>option</span></kbd><span>+</span><kbd class="space-key">space</kbd></div><h3>Open Strafe from any app.</h3><p>Open Strafe with Option + Space.<br>Change the shortcut in Settings.</p></div><dl class="shortcut-list"><div><dt>Previous / next article</dt><dd><kbd>h</kbd><kbd>l</kbd></dd></div><div><dt>Scroll down / up</dt><dd><kbd>j</kbd><kbd>k</kbd></dd></div><div><dt>Search again</dt><dd><kbd>/</kbd></dd></div><div><dt>Open in your browser</dt><dd><kbd>o</kbd></dd></div><div><dt>Return to your work</dt><dd><kbd>esc</kbd></dd></div></dl></div>
+
+<section class="keyboard-section section-pad" id="controls" aria-labelledby="controls-heading">
+  <div class="wrap keyboard-layout">
+    <div class="keyboard-copy"><p class="eyebrow">03 / STAY ON THE KEYS</p><h2 id="controls-heading">A few keys.<br><span class="serif">And you're there.</span></h2><p>Find the answer, move to the next result,<br>or return to your work. Your hands can stay put.</p><div class="key-sculpture" aria-hidden="true"><span class="sculpted-key"><small>option</small>⌥</span><span class="sculpted-key space-key"><small>open strafe</small>space</span></div></div>
+    <dl class="shortcut-list"><div><dt>Open Strafe</dt><dd><kbd>⌥</kbd><kbd>space</kbd></dd></div><div><dt>Previous / next result</dt><dd><kbd>h</kbd><kbd>l</kbd></dd></div><div><dt>Scroll down / up</dt><dd><kbd>j</kbd><kbd>k</kbd></dd></div><div><dt>Toggle images</dt><dd><kbd>i</kbd></dd></div><div><dt>Toggle original layout</dt><dd><kbd>w</kbd></dd></div><div><dt>Open in browser</dt><dd><kbd>o</kbd></dd></div><div><dt>Search again</dt><dd><kbd>/</kbd></dd></div><div><dt>Back to your work</dt><dd><kbd>esc</kbd></dd></div></dl>
+  </div>
 </section>
-<section id="setup" class="setup wrap"><div><div class="eyebrow">INSTALL STRAFE</div><h2>Download Strafe.</h2><p>Download Strafe for macOS on Apple Silicon.<br>Enter a Brave Search API key to run searches.</p><a class="button" href="https://github.com/ubernerd117/strafe/releases/latest">Get Strafe for Mac <span aria-hidden="true">↗</span></a></div><ol><li><span>01</span><div><h3>Install the app.</h3><p>Open the DMG and drag Strafe to Applications.</p></div></li><li><span>02</span><div><h3>Add your API key.</h3><p>Enter your <a href="https://brave.com/search/api/">Brave Search API key ↗</a> on first launch.</p></div></li><li><span>03</span><div><h3>Enable the keyboard shortcut.</h3><p>Grant Accessibility access for the global shortcut, then press Option + Space.</p></div></li></ol></section>
+
+<section class="get-started section-pad" id="setup" aria-labelledby="setup-heading">
+  <div class="wrap">
+    <div class="closing-heading"><svg class="closing-mark" aria-hidden="true"><use href="#strafe-mark"/></svg><p class="eyebrow">MAKE A LITTLE ROOM FOR FOCUS</p><h2 id="setup-heading">Your next search<br><span class="serif">starts here.</span></h2><a class="button button-dark" href="https://github.com/ubernerd117/strafe/releases/latest">Get Strafe for Mac <span aria-hidden="true">↗</span></a><p class="download-note">Free &amp; open source. Bring your Brave Search API key.</p></div>
+    <ol class="setup-steps"><li><span>01</span><div><h3>Make it at home.</h3><p>Open the DMG and drag Strafe to Applications.</p></div></li><li><span>02</span><div><h3>Add your search key.</h3><p>Enter a <a href="https://brave.com/search/api/">Brave Search API key ↗</a> on first launch.</p></div></li><li><span>03</span><div><h3>Keep it a shortcut away.</h3><p>Allow Accessibility access. Press Option + Space from any app.</p></div></li></ol>
+  </div>
+</section>
 </main>
-<footer class="wrap"><a class="brand" href="#"><span class="mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 26 26 6M15 6h11v11"/></svg></span> strafe<span class="brand-dot">.</span></a><a href="https://sourab.tech/">Built by Sourab ↗</a><a href="https://github.com/ubernerd117/strafe">Source on GitHub ↗</a></footer>
+<footer class="footer wrap"><a class="brand" href="#top" aria-label="Strafe home"><svg aria-hidden="true"><use href="#strafe-mark"/></svg>strafe<span>.</span></a><p>A small tool for curious minds.</p><div><a href="https://sourab.tech/">Made by Sourab ↗</a><a href="https://github.com/ubernerd117/strafe">Source ↗</a></div></footer>
 </body>
 </html>

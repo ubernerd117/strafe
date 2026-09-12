@@ -21,9 +21,9 @@
 
 ## Demo
 
-[![Watch the 37-second Strafe demo](landing/assets/search-result-1.png)](https://strafe.sourab.tech/#watch)
+[![Watch the 37-second Strafe demo](landing/assets/strafe-reader-mode.png)](https://strafe.sourab.tech/assets/strafe-demo.mp4)
 
-[Watch on the website](https://strafe.sourab.tech/#watch) · [Open the video](landing/assets/strafe-demo.mp4)
+[Watch on the website](https://strafe.sourab.tech/assets/strafe-demo.mp4) · [Open the video](landing/assets/strafe-demo.mp4)
 
 ## Download
 
